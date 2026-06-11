@@ -2,6 +2,15 @@
 
 All notable changes to the ImDisk GUI project will be documented in this file.
 
+## [1.01] - 2026-06-11
+### Added
+- **資料自動儲存時間 (Auto Save Interval)**：進階設定中新增定時備份下拉選單，支援 `1分鐘`、`3分鐘`、`5分鐘`、`10分鐘`、`30分鐘`、`60分鐘` 定期同步資料回備份映像檔。
+- **智慧變更偵測 (Dirty check)**：查詢核心驅動的 `IMDISK_IMAGE_MODIFIED` 標記，只有在虛擬磁碟被寫入/變更過資料時才觸發定時備份，避免無謂寫入，保護實體 SSD 的寫入壽命。
+- **設定檔保存延伸**：`config.json` 格式擴充 `AutoSaveIntervalMinutes` 欄位以持久化保存設定，由自定義 `SimpleJsonParser` 相容序列化。
+
+### Changed
+- **版本號更新**：主程式與 `AssemblyInfo` 版本更新至 `1.0.1.0`，關於視窗版本文字更新至 `1.01`。
+
 ## [2026-06-11] - 優化與修復版 (Optimization & Bugfix Release)
 
 ### Added

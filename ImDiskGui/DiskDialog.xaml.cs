@@ -15,6 +15,10 @@ namespace ImDiskGui
         public string SelectedFileSystem { get; private set; }
         public bool SaveOnShutdown { get; private set; }
         public bool IsRemovable { get; private set; }
+        public int SelectedAutoSaveIntervalMinutes { get; private set; }
+
+        // Exact byte size detected from an existing image file (0 = not detected)
+        private long _detectedImageSizeInBytes = 0;
 
         public DiskDialog()
         {
@@ -76,12 +80,42 @@ namespace ImDiskGui
             {
                 Title = "Choose Backup Image Location",
                 Filter = "Disk Image (*.img;*.bin)|*.img;*.bin|All files (*.*)|*.*",
-                DefaultExt = ".img"
+                DefaultExt = ".img",
+                OverwritePrompt = false  // Don't warn about overwriting existing files
             };
 
             if (saveDialog.ShowDialog() == true)
             {
                 TxtImagePath.Text = saveDialog.FileName;
+
+                // If user selected an existing image file, auto-detect its size
+                try
+                {
+                    if (File.Exists(saveDialog.FileName))
+                    {
+                        var fi = new FileInfo(saveDialog.FileName);
+                        if (fi.Length > 0)
+                        {
+                            // Store exact byte size for precise mounting
+                            _detectedImageSizeInBytes = fi.Length;
+
+                            // Display as MB (ceiling to avoid truncation)
+                            long sizeMB = (fi.Length + (1024 * 1024 - 1)) / (1024 * 1024);
+                            TxtSize.Text = sizeMB.ToString();
+
+                            // Auto-check save on shutdown since they're loading from an existing image
+                            ChkSaveOnShutdown.IsChecked = true;
+                        }
+                    }
+                    else
+                    {
+                        _detectedImageSizeInBytes = 0;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine("Error detecting image file size: " + ex.Message);
+                }
             }
         }
 
@@ -117,7 +151,16 @@ namespace ImDiskGui
                 return;
             }
 
-            SelectedSizeInBytes = sizeMB * 1024 * 1024;
+            // If we detected an exact image file size, use that to avoid truncation issues;
+            // otherwise compute from the user-entered MB value.
+            if (_detectedImageSizeInBytes > 0)
+            {
+                SelectedSizeInBytes = _detectedImageSizeInBytes;
+            }
+            else
+            {
+                SelectedSizeInBytes = sizeMB * 1024 * 1024;
+            }
 
             // Validate Drive Letter
             if (ComboDriveLetter.SelectedItem == null)
@@ -149,6 +192,12 @@ namespace ImDiskGui
 
             SelectedFileSystem = ((System.Windows.Controls.ComboBoxItem)ComboFileSystem.SelectedItem).Content.ToString();
             IsRemovable = ChkRemovable.IsChecked == true;
+
+            SelectedAutoSaveIntervalMinutes = 0;
+            if (SaveOnShutdown && ComboAutoSave.SelectedItem is System.Windows.Controls.ComboBoxItem autoSaveItem && autoSaveItem.Tag != null)
+            {
+                SelectedAutoSaveIntervalMinutes = int.Parse(autoSaveItem.Tag.ToString());
+            }
 
             DialogResult = true;
             Close();

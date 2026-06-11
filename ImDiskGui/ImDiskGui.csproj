@@ -11,6 +11,9 @@
     <LangVersion>8.0</LangVersion>
     <Prefer32Bit>false</Prefer32Bit>
     <ApplicationIcon>imdisk.ico</ApplicationIcon>
+    <Version>1.0.1.0</Version>
+    <AssemblyVersion>1.0.1.0</AssemblyVersion>
+    <FileVersion>1.0.1.0</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">

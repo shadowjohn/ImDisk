@@ -246,6 +246,28 @@ namespace ImDiskGui
             IntPtr lpOverlapped
         );
 
+        public const uint IOCTL_IMDISK_SET_DEVICE_FLAGS = 0x83722014;
+        public const uint IMDISK_IMAGE_MODIFIED = 0x00010000;
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct IMDISK_SET_DEVICE_FLAGS
+        {
+            public uint FlagsToChange;
+            public uint FlagValues;
+        }
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        public static extern bool DeviceIoControl(
+            SafeFileHandle hDevice,
+            uint dwIoControlCode,
+            ref IMDISK_SET_DEVICE_FLAGS lpInBuffer,
+            uint nInBufferSize,
+            IntPtr lpOutBuffer,
+            uint nOutBufferSize,
+            out uint lpBytesReturned,
+            IntPtr lpOverlapped
+        );
+
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         public static extern bool FlushFileBuffers(SafeFileHandle hFile);
 

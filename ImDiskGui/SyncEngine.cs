@@ -21,12 +21,11 @@ namespace ImDiskGui
             string tempImagePath = targetImagePath + ".tmp";
 
             SafeFileHandle hVolume = null;
-            FileStream volumeStream = null;
-            FileStream tempFileStream = null;
+            SafeFileHandle hFile = null;
 
             try
             {
-                // 1. Open volume handle with GENERIC_READ and share read/write
+                // 1. Open volume handle (needed for flush and modified flag)
                 hVolume = ImDiskNativeApi.CreateFile(
                     volumePath,
                     ImDiskNativeApi.GENERIC_READ | ImDiskNativeApi.GENERIC_WRITE,
@@ -46,26 +45,6 @@ namespace ImDiskGui
                 // 2. Flush file buffers on the volume to commit pending writes to RAM disk
                 ImDiskNativeApi.FlushFileBuffers(hVolume);
 
-                // 3. Get total volume size
-                long volumeSize = diskSize;
-                if (volumeSize <= 0)
-                {
-                    if (!ImDiskNativeApi.ImDiskGetVolumeSize(hVolume, ref volumeSize) || volumeSize <= 0)
-                    {
-                        // Fallback: Query disk geometry via API if volume size fails
-                        // Let's check drive capacity by directory info as another fallback
-                        try
-                        {
-                            var driveInfo = new DriveInfo(driveLetter.ToString());
-                            volumeSize = driveInfo.TotalSize;
-                        }
-                        catch
-                        {
-                            volumeSize = 100 * 1024 * 1024; // Default to 100MB fallback if all else fails
-                        }
-                    }
-                }
-
                 // Ensure parent directory exists for backup image
                 string directory = Path.GetDirectoryName(targetImagePath);
                 if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
@@ -73,46 +52,45 @@ namespace ImDiskGui
                     Directory.CreateDirectory(directory);
                 }
 
-                // 4. Open streams
-                volumeStream = new FileStream(hVolume, FileAccess.Read);
-                tempFileStream = new FileStream(tempImagePath, FileMode.Create, FileAccess.Write, FileShare.None);
+                // 3. Open temp file for writing
+                hFile = ImDiskNativeApi.CreateFile(
+                    tempImagePath,
+                    ImDiskNativeApi.GENERIC_WRITE,
+                    0, // No sharing
+                    IntPtr.Zero,
+                    2, // CREATE_ALWAYS
+                    0,
+                    IntPtr.Zero
+                );
 
-                // 5. Read block by block and write
-                byte[] buffer = new byte[1024 * 1024]; // 1MB buffer
-                long totalBytesCopied = 0;
-                int bytesRead;
-
-                while (totalBytesCopied < volumeSize)
+                if (hFile.IsInvalid)
                 {
-                    long remaining = volumeSize - totalBytesCopied;
-                    int bytesToRead = (int)Math.Min(buffer.Length, remaining);
-
-                    bytesRead = volumeStream.Read(buffer, 0, bytesToRead);
-                    if (bytesRead <= 0)
-                    {
-                        break; // EOF
-                    }
-
-                    tempFileStream.Write(buffer, 0, bytesRead);
-                    totalBytesCopied += bytesRead;
-
-                    if (progress != null)
-                    {
-                        double percent = (double)totalBytesCopied / volumeSize * 100.0;
-                        progress(Math.Min(percent, 100.0));
-                    }
+                    int err = Marshal.GetLastWin32Error();
+                    throw new System.ComponentModel.Win32Exception(err, $"Failed to create temp image file {tempImagePath}");
                 }
 
-                // Flush and close temp file stream
-                tempFileStream.Flush(true);
-                tempFileStream.Close();
-                tempFileStream = null;
+                // 4. Use ImDiskSaveImageFile to save the ENTIRE disk image (disk level, not volume level)
+                //    This ensures partition table and all disk structures are saved correctly.
+                progress?.Invoke(10);
 
-                volumeStream.Close();
-                volumeStream = null;
+                bool saveOk = ImDiskNativeApi.ImDiskSaveImageFile(
+                    hVolume,
+                    hFile,
+                    1024 * 1024, // 1MB buffer
+                    IntPtr.Zero  // No cancel flag
+                );
 
-                hVolume.Close();
-                hVolume = null;
+                progress?.Invoke(90);
+
+                if (!saveOk)
+                {
+                    int err = Marshal.GetLastWin32Error();
+                    throw new System.ComponentModel.Win32Exception(err, "ImDiskSaveImageFile failed");
+                }
+
+                // 5. Close temp file handle
+                hFile.Close();
+                hFile = null;
 
                 // 6. Atomic swap: delete old, move new
                 if (File.Exists(targetImagePath))
@@ -121,6 +99,38 @@ namespace ImDiskGui
                 }
                 File.Move(tempImagePath, targetImagePath);
 
+                progress?.Invoke(95);
+
+                // 7. Clear modified flag since save succeeded
+                try
+                {
+                    var deviceFlags = new ImDiskNativeApi.IMDISK_SET_DEVICE_FLAGS
+                    {
+                        FlagsToChange = ImDiskNativeApi.IMDISK_IMAGE_MODIFIED,
+                        FlagValues = 0
+                    };
+                    uint bytesReturned;
+                    ImDiskNativeApi.DeviceIoControl(
+                        hVolume,
+                        ImDiskNativeApi.IOCTL_IMDISK_SET_DEVICE_FLAGS,
+                        ref deviceFlags,
+                        (uint)Marshal.SizeOf(deviceFlags),
+                        IntPtr.Zero,
+                        0,
+                        out bytesReturned,
+                        IntPtr.Zero
+                    );
+                }
+                catch (Exception ioEx)
+                {
+                    System.Diagnostics.Debug.WriteLine("Failed to clear modified flag: " + ioEx.Message);
+                }
+
+                hVolume.Close();
+                hVolume = null;
+
+                progress?.Invoke(100);
+
                 return true;
             }
             catch (Exception ex)
@@ -128,8 +138,7 @@ namespace ImDiskGui
                 System.Diagnostics.Debug.WriteLine("Sync error: " + ex.Message);
 
                 // Cleanup
-                try { tempFileStream?.Close(); } catch { }
-                try { volumeStream?.Close(); } catch { }
+                try { hFile?.Close(); } catch { }
                 try { hVolume?.Close(); } catch { }
                 try
                 {

@@ -73,7 +73,7 @@
                 </Grid.RowDefinitions>
 
                 <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[AboutVersion]}" Style="{StaticResource AboutCaptionText}"/>
-                <TextBlock Grid.Row="0" Grid.Column="1" Text="1.0" Style="{StaticResource AboutValueText}" FontWeight="SemiBold"/>
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="1.01" Style="{StaticResource AboutValueText}" FontWeight="SemiBold"/>
 
                 <TextBlock Grid.Row="2" Grid.Column="0" Text="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[AboutAuthor]}" Style="{StaticResource AboutCaptionText}"/>
                 <TextBlock Grid.Row="2" Grid.Column="1" Style="{StaticResource AboutValueText}">

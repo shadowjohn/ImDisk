@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:ImDiskGui"
-        Title="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[DlgAddTitle]}" Height="380" Width="480"
+        Title="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[DlgAddTitle]}" Height="420" Width="480"
         Background="{DynamicResource WindowBackgroundBrush}" Foreground="{DynamicResource TextBrush}" WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize">
     <Grid Margin="20">
@@ -63,6 +63,20 @@
             <StackPanel Margin="0,0,0,15">
                 <CheckBox x:Name="ChkSaveOnShutdown" Content="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[DlgSave]}" Foreground="{DynamicResource TextBrush}" Margin="0,0,0,5" Checked="ChkSaveOnShutdown_Checked" Unchecked="ChkSaveOnShutdown_Unchecked"/>
                 <CheckBox x:Name="ChkRemovable" Content="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[DlgRemovable]}" Foreground="{DynamicResource TextBrush}"/>
+            </StackPanel>
+
+            <!-- Auto Save Interval -->
+            <StackPanel x:Name="PanelAutoSave" Orientation="Horizontal" Margin="0,0,0,15" IsEnabled="{Binding ElementName=ChkSaveOnShutdown, Path=IsChecked}">
+                <TextBlock Text="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[DlgAutoSaveInterval]}" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="{DynamicResource TextBrush}"/>
+                <ComboBox x:Name="ComboAutoSave" Width="150" Height="26" VerticalAlignment="Center" SelectedIndex="0" Background="{DynamicResource TextBoxBackgroundBrush}" Foreground="{DynamicResource TextBoxForegroundBrush}" BorderBrush="{DynamicResource BorderBrush}">
+                    <ComboBoxItem Content="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[AutoSaveManual]}" Tag="0"/>
+                    <ComboBoxItem Content="1 分鐘 (1 min)" Tag="1"/>
+                    <ComboBoxItem Content="3 分鐘 (3 min)" Tag="3"/>
+                    <ComboBoxItem Content="5 分鐘 (5 min)" Tag="5"/>
+                    <ComboBoxItem Content="10 分鐘 (10 min)" Tag="10"/>
+                    <ComboBoxItem Content="30 分鐘 (30 min)" Tag="30"/>
+                    <ComboBoxItem Content="60 分鐘 (60 min)" Tag="60"/>
+                </ComboBox>
             </StackPanel>
         </StackPanel>
 

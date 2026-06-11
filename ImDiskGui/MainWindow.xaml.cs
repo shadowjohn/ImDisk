@@ -23,6 +23,8 @@ namespace ImDiskGui
             private bool _saveOnShutdown;
             private bool _isRemovable;
             private bool _isMounted;
+            private int _autoSaveIntervalMinutes;
+            private DateTime _lastAutoSaveTime = DateTime.MinValue;
 
             public uint DeviceNumber
             {
@@ -57,7 +59,30 @@ namespace ImDiskGui
             public bool SaveOnShutdown
             {
                 get => _saveOnShutdown;
-                set { _saveOnShutdown = value; OnPropertyChanged(nameof(SaveOnShutdown)); OnPropertyChanged(nameof(SaveOnShutdownString)); }
+                set
+                {
+                    _saveOnShutdown = value;
+                    OnPropertyChanged(nameof(SaveOnShutdown));
+                    OnPropertyChanged(nameof(SaveOnShutdownString));
+                    OnPropertyChanged(nameof(AutoSaveIntervalString));
+                }
+            }
+
+            public int AutoSaveIntervalMinutes
+            {
+                get => _autoSaveIntervalMinutes;
+                set
+                {
+                    _autoSaveIntervalMinutes = value;
+                    OnPropertyChanged(nameof(AutoSaveIntervalMinutes));
+                    OnPropertyChanged(nameof(AutoSaveIntervalString));
+                }
+            }
+
+            public DateTime LastAutoSaveTime
+            {
+                get => _lastAutoSaveTime;
+                set { _lastAutoSaveTime = value; }
             }
 
             public bool IsRemovable
@@ -74,7 +99,22 @@ namespace ImDiskGui
 
             public string DriveLetterString => DriveLetter.ToString() + ":";
             public string SizeString => (SizeInBytes / (1024.0 * 1024.0)).ToString("N0") + " MB";
-            public string SaveOnShutdownString => SaveOnShutdown ? "Yes" : "No";
+            public string SaveOnShutdownString => SaveOnShutdown ? LanguageManager.Instance["Yes"] : LanguageManager.Instance["No"];
+
+            public string AutoSaveIntervalString
+            {
+                get
+                {
+                    if (AutoSaveIntervalMinutes <= 0 || !SaveOnShutdown)
+                    {
+                        return LanguageManager.Instance["AutoSaveManual"];
+                    }
+                    else
+                    {
+                        return string.Format(LanguageManager.Instance["AutoSaveIntervalText"], AutoSaveIntervalMinutes);
+                    }
+                }
+            }
 
             public event PropertyChangedEventHandler PropertyChanged;
             protected void OnPropertyChanged(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
@@ -179,7 +219,13 @@ namespace ImDiskGui
                 {
                     await MountDiskAsync(disk, isNewDisk: false);
                 }
+                else
+                {
+                    disk.LastAutoSaveTime = DateTime.Now;
+                }
             }
+
+            InitializeAutoSaveTimer();
         }
 
         private async Task<bool> CheckAndStartServiceAsync()
@@ -346,7 +392,8 @@ namespace ImDiskGui
                     ImagePath = dlg.SelectedImagePath,
                     FileSystem = dlg.SelectedFileSystem,
                     SaveOnShutdown = dlg.SaveOnShutdown,
-                    IsRemovable = dlg.IsRemovable
+                    IsRemovable = dlg.IsRemovable,
+                    AutoSaveIntervalMinutes = dlg.SelectedAutoSaveIntervalMinutes
                 };
 
                 RamDisks.Add(newDisk);
@@ -377,31 +424,25 @@ namespace ImDiskGui
                 if (disk.IsRemovable) flags |= ImDiskNativeApi.IMDISK_OPTION_REMOVABLE;
 
                 string mountPoint = disk.DriveLetterString;
-                string filename = string.IsNullOrEmpty(disk.ImagePath) ? null : disk.ImagePath;
+                string imagePath = string.IsNullOrEmpty(disk.ImagePath) ? null : disk.ImagePath;
+                bool hasExistingImage = !string.IsNullOrEmpty(imagePath) && File.Exists(imagePath);
 
-                // If backing image exists and "資料保存" is enabled, we load it.
-                if (!string.IsNullOrEmpty(filename) && File.Exists(filename))
+                string filename = null;
+                if (hasExistingImage)
                 {
-                    // Driver will load the file contents automatically into VM memory
+                    filename = imagePath;
+                    // Ensure disk size matches image file size exactly
                     try
                     {
-                        var fi = new FileInfo(filename);
-                        if (fi.Length < disk.SizeInBytes)
+                        var fi = new FileInfo(imagePath);
+                        if (fi.Length > 0)
                         {
-                            using (var fs = new FileStream(filename, FileMode.Open, FileAccess.Write))
-                            {
-                                fs.SetLength(disk.SizeInBytes);
-                            }
+                            // Use the image file's exact size for the disk
+                            disk.SizeInBytes = fi.Length;
+                            geometry.Cylinders = fi.Length;
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        System.Diagnostics.Debug.WriteLine("Error padding image file: " + ex.Message);
-                    }
-                }
-                else
-                {
-                    filename = null; // Fresh RAM disk
+                    catch { }
                 }
 
                 bool mountOk = ImDiskNativeApi.ImDiskCreateDeviceEx(
@@ -410,7 +451,7 @@ namespace ImDiskGui
                     ref geometry,
                     ref offset,
                     flags,
-                    filename,
+                    filename,  // null for new disk, image path for existing
                     false,
                     mountPoint
                 );
@@ -419,10 +460,11 @@ namespace ImDiskGui
                 {
                     disk.DeviceNumber = deviceNumber;
                     disk.IsMounted = true;
+                    disk.LastAutoSaveTime = DateTime.Now;
 
-                    // Format the drive if it is a fresh VM disk (not preloaded from an image)
-                    if (string.IsNullOrEmpty(filename))
+                    if (!hasExistingImage)
                     {
+                        // Fresh disk — format it
                         FormatDrive(mountPoint, disk.FileSystem);
                     }
                     return true;
@@ -874,6 +916,90 @@ namespace ImDiskGui
             aboutWin.ShowDialog();
         }
 
+        private System.Windows.Threading.DispatcherTimer _autoSaveTimer;
+
+        private void InitializeAutoSaveTimer()
+        {
+            _autoSaveTimer = new System.Windows.Threading.DispatcherTimer();
+            _autoSaveTimer.Interval = TimeSpan.FromSeconds(10);
+            _autoSaveTimer.Tick += AutoSaveTimer_Tick;
+            _autoSaveTimer.Start();
+        }
+
+        private async void AutoSaveTimer_Tick(object sender, EventArgs e)
+        {
+            SyncMountedStatesWithSystem();
+
+            foreach (var disk in RamDisks)
+            {
+                if (disk.IsMounted && disk.SaveOnShutdown && disk.AutoSaveIntervalMinutes > 0 && !string.IsNullOrEmpty(disk.ImagePath))
+                {
+                    if (disk.LastAutoSaveTime == DateTime.MinValue)
+                    {
+                        disk.LastAutoSaveTime = DateTime.Now;
+                        continue;
+                    }
+
+                    var elapsed = DateTime.Now - disk.LastAutoSaveTime;
+                    if (elapsed >= TimeSpan.FromMinutes(disk.AutoSaveIntervalMinutes))
+                    {
+                        if (IsDiskModified(disk.DeviceNumber))
+                        {
+                            System.Diagnostics.Debug.WriteLine($"Disk {disk.DriveLetterString} is modified, performing scheduled auto-sync.");
+                            disk.LastAutoSaveTime = DateTime.Now;
+                            await PerformAutoSyncAsync(disk);
+                        }
+                        else
+                        {
+                            disk.LastAutoSaveTime = DateTime.Now;
+                        }
+                    }
+                }
+            }
+        }
+
+        private async Task PerformAutoSyncAsync(RamDiskConfig disk)
+        {
+            TxtStatus.Text = LanguageManager.Instance.Format("MsgSyncing", disk.DriveLetterString, Path.GetFileName(disk.ImagePath));
+
+            bool success = await SyncEngine.SaveRamDiskToImageAsync(disk.DriveLetter, disk.ImagePath, disk.SizeInBytes, (pct) =>
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    TxtStatus.Text = LanguageManager.Instance.Format("MsgSyncingProgress", disk.DriveLetterString, pct.ToString("F0"));
+                });
+            });
+
+            if (success)
+            {
+                TxtStatus.Text = LanguageManager.Instance.Format("MsgSyncSuccess", disk.DriveLetterString);
+            }
+            else
+            {
+                TxtStatus.Text = LanguageManager.Instance.Format("MsgSyncFailed", disk.DriveLetterString);
+                System.Diagnostics.Debug.WriteLine($"Auto-sync failed for disk {disk.DriveLetterString} to {disk.ImagePath}");
+            }
+        }
+
+        private bool IsDiskModified(uint deviceNumber)
+        {
+            if (deviceNumber == 0xFFFFFFFF) return false;
+            try
+            {
+                byte[] buffer = new byte[1024];
+                if (ImDiskQueryDevice(deviceNumber, buffer, buffer.Length))
+                {
+                    uint flags = BitConverter.ToUInt32(buffer, 40);
+                    return (flags & ImDiskNativeApi.IMDISK_IMAGE_MODIFIED) != 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("Error checking modified flag: " + ex.Message);
+            }
+            return false;
+        }
+
     }
 
     // --- SIMPLE JSON PARSER HELPER ---
@@ -894,7 +1020,8 @@ namespace ImDiskGui
                 sb.Append($"\"ImagePath\":\"{item.ImagePath?.Replace("\\", "\\\\")}\",");
                 sb.Append($"\"FileSystem\":\"{item.FileSystem}\",");
                 sb.Append($"\"SaveOnShutdown\":{(item.SaveOnShutdown ? "true" : "false")},");
-                sb.Append($"\"IsRemovable\":{(item.IsRemovable ? "true" : "false")}");
+                sb.Append($"\"IsRemovable\":{(item.IsRemovable ? "true" : "false")},");
+                sb.Append($"\"AutoSaveIntervalMinutes\":{item.AutoSaveIntervalMinutes}");
                 sb.Append("}");
                 if (i < items.Length - 1) sb.Append(",");
             }
@@ -941,6 +1068,9 @@ namespace ImDiskGui
                             case "FileSystem": config.FileSystem = val; break;
                             case "SaveOnShutdown": config.SaveOnShutdown = bool.Parse(val); break;
                             case "IsRemovable": config.IsRemovable = bool.Parse(val); break;
+                            case "AutoSaveIntervalMinutes":
+                                if (int.TryParse(val, out int iv)) config.AutoSaveIntervalMinutes = iv;
+                                break;
                         }
                     }
                     list.Add(config);

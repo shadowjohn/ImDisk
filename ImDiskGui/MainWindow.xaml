@@ -171,7 +171,8 @@
                 <DataGridTextColumn Header="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[ColDrive]}" Binding="{Binding DriveLetterString}" Width="80"/>
                 <DataGridTextColumn Header="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[ColSize]}" Binding="{Binding SizeString}" Width="100"/>
                 <DataGridTextColumn Header="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[ColFS]}" Binding="{Binding FileSystem}" Width="120"/>
-                <DataGridTextColumn Header="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[ColSave]}" Binding="{Binding SaveOnShutdownString}" Width="200"/>
+                <DataGridTextColumn Header="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[ColSave]}" Binding="{Binding SaveOnShutdownString}" Width="150"/>
+                <DataGridTextColumn Header="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[ColAutoSave]}" Binding="{Binding AutoSaveIntervalString}" Width="120"/>
                 <DataGridTextColumn Header="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[ColBackup]}" Binding="{Binding ImagePath}" Width="*"/>
             </DataGrid.Columns>
         </DataGrid>
