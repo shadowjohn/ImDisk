@@ -73,8 +73,9 @@
 
 ## Git Push Key
 
-- 已在 `D:\key` 建立 OpenSSH ed25519 key。
-- private key：`D:\key\imdisk_github_ed25519`
-- public key：`D:\key\imdisk_github_ed25519.pub`
-- fingerprint：`SHA256:c9UYU5tYGkgnbyIchY1nX8hsU+NHUYkkuvE5n5nNqHE`
-- comment：`imdisk-github-push-20260611`
+- GitHub push 使用既有 PuTTY PPK key，不另建 OpenSSH key。
+- private key：`D:\key\rsa-key-20260513.ppk`
+- plink：`C:\Program Files\Common Files\MariaDBShared\HeidiSQL\plink.exe`
+- push 時使用：
+  - `GIT_SSH_COMMAND="plink.exe -batch -i D:/key/rsa-key-20260513.ppk"`
+  - `GIT_SSH_VARIANT=plink`
