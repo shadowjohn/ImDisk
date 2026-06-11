@@ -93,7 +93,7 @@
                         <TextBlock Text="Gemini" Foreground="{DynamicResource TextBrush}" FontSize="12" FontWeight="SemiBold"/>
                     </Border>
                     <Border Style="{StaticResource CollabBadge}">
-                        <TextBlock Text="Codex" Foreground="#38E54D" FontSize="12" FontWeight="SemiBold"/>
+                        <TextBlock Text="Codex" Foreground="{DynamicResource TextBrush}" FontSize="12" FontWeight="SemiBold"/>
                     </Border>
                 </StackPanel>
             </Grid>

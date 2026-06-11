@@ -272,6 +272,38 @@ foreach ($item in $driverCopyMap) {
 }
 
 if (Test-Path "uninstall_imdisk.cmd") {
+    $rootCmd = "uninstall_imdisk.cmd"
+    $content = Get-Content $rootCmd -Raw
+    $targetLine = 'start "" "%SystemRoot%\system32\rundll32.exe" setupapi.dll,InstallHinfSection DefaultUninstall 132 %SystemRoot%\inf\imdisk.inf'
+    $patchedLine = 'if exist "%SystemRoot%\inf\imdisk.inf" (' + "`r`n" + '  "%SystemRoot%\system32\rundll32.exe" setupapi.dll,InstallHinfSection DefaultUninstall 132 %SystemRoot%\inf\imdisk.inf' + "`r`n" + ')'
+    if ($content.Contains($targetLine)) {
+        $content = $content.Replace($targetLine, $patchedLine)
+    }
+    $targetTop = 'title ImDisk Virtual Disk Driver Uninstall'
+    $replacementTop = 'title ImDisk Virtual Disk Driver Uninstall' + "`r`n`r`n" +
+'reg query HKLM\SYSTEM\CurrentControlSet\Services\ImDisk >nul 2>&1' + "`r`n" +
+'if %errorlevel% neq 0 (' + "`r`n" +
+'    endlocal' + "`r`n" +
+'    goto :eof' + "`r`n" +
+')' + "`r`n`r`n" +
+'if not exist "%SystemRoot%\inf\imdisk.inf" (' + "`r`n" +
+'    endlocal' + "`r`n" +
+'    goto :eof' + "`r`n" +
+')' + "`r`n`r`n" +
+'fltmc >nul 2>&1' + "`r`n" +
+'if %errorlevel% neq 0 (' + "`r`n" +
+'    echo.' + "`r`n" +
+'    echo 錯誤：此指令檔必須以「系統管理員」身分執行！' + "`r`n" +
+'    echo 請在 uninstall_imdisk.cmd 上按滑鼠右鍵，選擇「以系統管理員身分執行」。' + "`r`n" +
+'    echo.' + "`r`n" +
+'    pause' + "`r`n" +
+'    endlocal' + "`r`n" +
+'    goto :eof' + "`r`n" +
+')'
+    if ($content.Contains($targetTop)) {
+        $content = $content.Replace($targetTop, $replacementTop)
+    }
+    $content | Out-File $rootCmd -Encoding default -Force
     Copy-Item "uninstall_imdisk.cmd" (Join-Path $outDir "uninstall_imdisk.cmd") -Force
 }
 $driverUninstallScript = Join-Path $driverOutDir "uninstall_imdisk.cmd"

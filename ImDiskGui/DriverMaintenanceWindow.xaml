@@ -26,7 +26,8 @@
             <Button x:Name="BtnInstall"
                     Content="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[DriverInstallTitle]}"
                     Width="132" Height="30" Margin="0,0,8,0"
-                    Background="#38E54D" Foreground="#121212" BorderThickness="0" Cursor="Hand"
+                    Background="{DynamicResource ButtonBackground}" Foreground="{DynamicResource TextBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Cursor="Hand"
                     Click="BtnInstall_Click"/>
             <Button x:Name="BtnUninstall"
                     Content="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[DriverUninstall]}"

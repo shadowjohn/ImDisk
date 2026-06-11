@@ -135,7 +135,9 @@ namespace ImDiskGui
                     { "BenchNotEnoughSpace", "測試需要 {0} 可用空間，目前磁碟只剩 {1}。" },
                     { "BenchElapsedValue", "{0} 秒" },
                     { "BenchPhysicalRam", "{0} physical" },
-                    { "BenchRamDiskValue", "{0} {1}，測試檔 {2}" }
+                    { "BenchRamDiskValue", "{0} {1}，測試檔 {2}" },
+                    { "TrayMinTitle", "已縮小至系統列" },
+                    { "TrayMinText", "ImDisk RAM 磁碟管理員仍在背景運行。雙擊此圖示可重新開啟。" }
                 }
             },
             {
@@ -246,7 +248,9 @@ namespace ImDiskGui
                     { "BenchNotEnoughSpace", "The selected test needs {0} free space. This drive only has {1} available." },
                     { "BenchElapsedValue", "{0} sec" },
                     { "BenchPhysicalRam", "{0} physical" },
-                    { "BenchRamDiskValue", "{0} {1}, test file {2}" }
+                    { "BenchRamDiskValue", "{0} {1}, test file {2}" },
+                    { "TrayMinTitle", "Minimized to Tray" },
+                    { "TrayMinText", "ImDisk RAM Disk Manager is still running in the background. Double-click this icon to restore." }
                 }
             }
         };

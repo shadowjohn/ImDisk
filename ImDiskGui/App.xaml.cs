@@ -223,6 +223,14 @@ namespace ImDiskGui
             }
         }
 
+        public void ShowTrayNotification(string title, string message, ToolTipIcon icon = ToolTipIcon.Info)
+        {
+            if (_notifyIcon != null)
+            {
+                _notifyIcon.ShowBalloonTip(3000, title, message, icon);
+            }
+        }
+
         protected override void OnExit(ExitEventArgs e)
         {
             if (_notifyIcon != null)

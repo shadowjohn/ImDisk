@@ -240,8 +240,59 @@ namespace ImDiskGui
             }
         }
 
+        private void SyncMountedStatesWithSystem()
+        {
+            try
+            {
+                uint[] deviceList = new uint[1024];
+                if (!ImDiskGetDeviceListEx((uint)deviceList.Length, deviceList))
+                {
+                    return;
+                }
+
+                uint count = deviceList[0];
+                var activeDevices = new System.Collections.Generic.Dictionary<char, uint>();
+
+                for (uint i = 1; i <= count; i++)
+                {
+                    uint devNum = deviceList[i];
+                    byte[] buffer = new byte[1024];
+                    if (ImDiskQueryDevice(devNum, buffer, buffer.Length))
+                    {
+                        char deviceDrive = BitConverter.ToChar(buffer, 44);
+                        if (deviceDrive != '\0')
+                        {
+                            char letter = char.ToUpper(deviceDrive);
+                            activeDevices[letter] = devNum;
+                        }
+                    }
+                }
+
+                foreach (var disk in RamDisks)
+                {
+                    char letter = char.ToUpper(disk.DriveLetter);
+                    if (activeDevices.TryGetValue(letter, out uint devNum))
+                    {
+                        disk.IsMounted = true;
+                        disk.DeviceNumber = devNum;
+                    }
+                    else
+                    {
+                        disk.IsMounted = false;
+                        disk.DeviceNumber = 0xFFFFFFFF;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("Error syncing mounted states: " + ex.Message);
+            }
+        }
+
         private void RefreshMountedState()
         {
+            SyncMountedStatesWithSystem();
+
             // Update TxtStatus
             int count = RamDisks.Count(d => d.IsMounted);
             TxtStatus.Text = $"{count} RAM Disk(s) Mounted";
@@ -395,6 +446,46 @@ namespace ImDiskGui
             );
         }
 
+        [System.Runtime.InteropServices.DllImport("imdisk.cpl", CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true)]
+        private static extern bool ImDiskGetDeviceListEx(uint ListLength, uint[] DeviceList);
+
+        [System.Runtime.InteropServices.DllImport("imdisk.cpl", CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true)]
+        private static extern bool ImDiskQueryDevice(uint DeviceNumber, byte[] CreateData, int CreateDataSize);
+
+        private uint? GetDeviceNumberForDriveLetter(char driveLetter)
+        {
+            try
+            {
+                uint[] deviceList = new uint[1024];
+                if (!ImDiskGetDeviceListEx((uint)deviceList.Length, deviceList))
+                {
+                    return null;
+                }
+
+                uint count = deviceList[0];
+                char targetUpper = char.ToUpper(driveLetter);
+
+                for (uint i = 1; i <= count; i++)
+                {
+                    uint devNum = deviceList[i];
+                    byte[] buffer = new byte[1024];
+                    if (ImDiskQueryDevice(devNum, buffer, buffer.Length))
+                    {
+                        char deviceDrive = BitConverter.ToChar(buffer, 44);
+                        if (char.ToUpper(deviceDrive) == targetUpper)
+                        {
+                            return devNum;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("Error getting device number: " + ex.Message);
+            }
+            return null;
+        }
+
         private async void BtnRemove_Click(object sender, RoutedEventArgs e)
         {
             if (GridRamDisks.SelectedItem is RamDiskConfig disk)
@@ -407,19 +498,48 @@ namespace ImDiskGui
                     await PerformSyncAsync(disk);
                 }
 
+                uint? actualDeviceNumber = GetDeviceNumberForDriveLetter(disk.DriveLetter);
+                if (actualDeviceNumber == null)
+                {
+                    // Already not mounted or not found in system
+                    disk.IsMounted = false;
+                    RamDisks.Remove(disk);
+                    SaveConfig();
+                    TxtStatus.Text = LanguageManager.Instance.Format("MsgDismountSuccess", disk.DriveLetterString);
+                    BtnRemove.IsEnabled = true;
+                    RefreshMountedState();
+                    UpdateMemoryStatus();
+                    return;
+                }
+
+                uint devNum = actualDeviceNumber.Value;
+                disk.DeviceNumber = devNum;
+
                 TxtStatus.Text = LanguageManager.Instance.Format("MsgDismounting", disk.DriveLetterString);
 
                 bool success = await Task.Run(() =>
                 {
                     ImDiskNativeApi.ImDiskNotifyRemovePending(IntPtr.Zero, disk.DriveLetter);
 
-                    // Mount point 模式由 ImDisk 自行解析裝置，可避開 UI 狀態中的 device number 過期。
-                    if (ImDiskNativeApi.ImDiskRemoveDevice(IntPtr.Zero, 0, disk.DriveLetterString))
+                    // Set API flag to force dismount
+                    try
+                    {
+                        var flags = ImDiskNativeApi.ImDiskGetAPIFlags();
+                        ImDiskNativeApi.ImDiskSetAPIFlags(flags | ImDiskNativeApi.ImDiskAPIFlags.ForceDismount);
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine("Error setting API flags: " + ex.Message);
+                    }
+
+                    // Try to remove by MountPoint & DeviceNumber
+                    if (ImDiskNativeApi.ImDiskRemoveDevice(IntPtr.Zero, devNum, disk.DriveLetterString))
                     {
                         return true;
                     }
 
-                    return ImDiskNativeApi.ImDiskForceRemoveDevice(IntPtr.Zero, disk.DeviceNumber);
+                    // Fallback to force remove
+                    return ImDiskNativeApi.ImDiskForceRemoveDevice(IntPtr.Zero, devNum);
                 });
 
                 if (success)
@@ -528,6 +648,19 @@ namespace ImDiskGui
                 // Just hide the window, don't exit the application
                 e.Cancel = true;
                 Hide();
+
+                try
+                {
+                    var app = System.Windows.Application.Current as App;
+                    if (app != null)
+                    {
+                        app.ShowTrayNotification(
+                            LanguageManager.Instance["TrayMinTitle"],
+                            LanguageManager.Instance["TrayMinText"]
+                        );
+                    }
+                }
+                catch { }
             }
         }
 

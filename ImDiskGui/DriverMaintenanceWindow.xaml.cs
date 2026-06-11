@@ -10,6 +10,30 @@ namespace ImDiskGui
         public DriverMaintenanceWindow()
         {
             InitializeComponent();
+            UpdateButtonsState();
+        }
+
+        private bool IsDriverServiceInstalled()
+        {
+            try
+            {
+                using (var sc = new System.ServiceProcess.ServiceController("ImDisk"))
+                {
+                    var status = sc.Status;
+                    return true;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private void UpdateButtonsState()
+        {
+            bool installed = IsDriverServiceInstalled();
+            BtnInstall.Visibility = installed ? Visibility.Collapsed : Visibility.Visible;
+            BtnUninstall.Visibility = installed ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private string AppBasePath => AppDomain.CurrentDomain.BaseDirectory;
@@ -77,6 +101,14 @@ namespace ImDiskGui
 
         private void BtnUninstall_Click(object sender, RoutedEventArgs e)
         {
+            // Check if the service exists before attempting uninstall
+            if (!IsDriverServiceInstalled())
+            {
+                DialogResult = false;
+                Close();
+                return;
+            }
+
             string localScript = ResolvePath("uninstall_imdisk.cmd");
             string systemScript = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "uninstall_imdisk.cmd");
 
