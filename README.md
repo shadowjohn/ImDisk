@@ -76,3 +76,26 @@
     Copyright (c) The FreeBSD Project.
     Copyright (c) The Regents of the University of California.
 
+
+---
+
+# ImDisk GUI 與 Driver Payload 編譯說明 (GUI Build & Driver Payload Instructions)
+
+本專案已整合 C# WPF GUI 管理介面。GUI 與 driver payload 分開發佈，`ImDiskGui.exe` 只負責管理與呼叫 driver 安裝/移除流程，不再把 driver 合體進單一執行檔。
+
+## 編譯與打包步驟
+
+1. **下載官方已數位簽署的驅動包**：
+   - 官方下載連結：[https://static.ltr-data.se/files/imdisk.zip](https://static.ltr-data.se/files/imdisk.zip) (或 [https://www.ltr-data.se/files/imdiskinst.zip](https://www.ltr-data.se/files/imdiskinst.zip))
+2. **放置檔案**：
+   - 將下載好的 `imdisk.zip` (或 `imdiskinst.zip`) 直接放入此專案的根目錄 `d:\mytools\ImDisk\`。
+3. **執行編譯與 payload 整理**：
+   - 執行根目錄的 [auto_build_gui.bat](auto_build_gui.bat)。
+   - 指令檔會自動執行：
+     - 計算並顯示該 ZIP 的 **SHA-256 哈希值**。
+     - 解壓縮並透過 Windows Authenticode 驗證 `sys\amd64\imdisk.sys` 是否由作者 **Olof Lagerkvist** / **LTR Data** 所數位簽署。
+     - 驗證成功後，將 binaries 整理到獨立的 `driver\` 目錄，供 GUI 的安裝/移除功能使用。
+     - x64 安裝段仍會使用 `cli\i386` 與 `cpl\i386` helper，發佈時請保留完整 `driver\` 結構。
+     - `uninstall_imdisk.cmd` 會與 `ImDiskGui.exe` 同層發佈。
+     - 編譯產出 `ImDiskGui.exe`。
+     - 發佈時請一併提供 `ImDiskGui.exe`、`uninstall_imdisk.cmd` 與 `driver\` 目錄。

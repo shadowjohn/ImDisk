@@ -1,0 +1,185 @@
+<Window x:Class="ImDiskGui.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:ImDiskGui"
+        Title="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[AppTitle]}" Height="500" Width="800"
+        Background="{DynamicResource WindowBackgroundBrush}" Foreground="{DynamicResource TextBrush}" WindowStartupLocation="CenterScreen"
+        Closing="Window_Closing">
+    <Window.Resources>
+        <!-- Flat Button Style -->
+        <Style x:Key="ToolbarButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Margin" Value="0,0,5,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" CornerRadius="4" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource ToolbarButtonHoverBackground}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="#555555"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Status Light Style -->
+        <Style x:Key="StatusLight" TargetType="Ellipse">
+            <Setter Property="Width" Value="8"/>
+            <Setter Property="Height" Value="8"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/> <!-- Toolbar -->
+            <RowDefinition Height="*"/>    <!-- Data Grid -->
+            <RowDefinition Height="Auto"/> <!-- Status Bar -->
+        </Grid.RowDefinitions>
+
+        <!-- Toolbar -->
+        <Border Grid.Row="0" Background="{DynamicResource ToolbarBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="10">
+            <DockPanel>
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                    <!-- Add button -->
+                    <Button Style="{StaticResource ToolbarButton}" Click="BtnAdd_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="➕" Foreground="#38E54D" Margin="0,0,5,0"/>
+                            <TextBlock Text="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[AddDisk]}" FontWeight="Bold"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Remove button -->
+                    <Button x:Name="BtnRemove" Style="{StaticResource ToolbarButton}" Click="BtnRemove_Click" IsEnabled="False">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="❌" Foreground="#FF5B5B" Margin="0,0,5,0"/>
+                            <TextBlock Text="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[Dismount]}" FontWeight="Bold"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Sync button -->
+                    <Button x:Name="BtnSync" Style="{StaticResource ToolbarButton}" Click="BtnSync_Click" IsEnabled="False">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="💾" Foreground="#2196F3" Margin="0,0,5,0"/>
+                            <TextBlock Text="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[SaveNow]}" FontWeight="Bold"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Benchmark button -->
+                    <Button x:Name="BtnBenchmark" Style="{StaticResource ToolbarButton}" Click="BtnBenchmark_Click" IsEnabled="False">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="⚡" Foreground="#FFD700" Margin="0,0,5,0"/>
+                            <TextBlock Text="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[Benchmark]}" FontWeight="Bold"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right">
+                    <!-- Theme Selector -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,10,0" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[Theme]}" Foreground="{DynamicResource TextBrush}" Margin="0,0,5,0" VerticalAlignment="Center" FontSize="11"/>
+                        <ComboBox x:Name="ComboTheme" Width="90" VerticalAlignment="Center"
+                                  Background="{DynamicResource TextBoxBackgroundBrush}" Foreground="{DynamicResource TextBoxForegroundBrush}" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}"
+                                  SelectionChanged="ComboTheme_SelectionChanged">
+                            <ComboBoxItem Content="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[ThemeLight]}" Tag="Light"/>
+                            <ComboBoxItem Content="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[ThemeDark]}" Tag="Dark"/>
+                            <ComboBoxItem Content="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[ThemeSystem]}" Tag="System"/>
+                        </ComboBox>
+                    </StackPanel>
+
+                    <!-- Language Selector -->
+                    <ComboBox x:Name="ComboLanguage" Width="100" Margin="0,0,10,0" VerticalAlignment="Center"
+                              Background="{DynamicResource TextBoxBackgroundBrush}" Foreground="{DynamicResource TextBoxForegroundBrush}" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}"
+                              SelectionChanged="ComboLanguage_SelectionChanged">
+                        <ComboBoxItem Content="正體中文" Tag="zh-TW"/>
+                        <ComboBoxItem Content="English" Tag="en-US"/>
+                    </ComboBox>
+
+                    <!-- About button -->
+                    <Button Style="{StaticResource ToolbarButton}" Click="BtnAbout_Click" Margin="0,0,10,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="ℹ️" Foreground="#2196F3" Margin="0,0,5,0"/>
+                            <TextBlock Text="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[About]}" FontWeight="Bold"/>
+                        </StackPanel>
+                    </Button>
+
+                    <TextBlock Text="ImDisk GUI Manager" Foreground="#888888" VerticalAlignment="Center" FontSize="11"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- Data Grid -->
+        <DataGrid Grid.Row="1" x:Name="GridRamDisks" AutoGenerateColumns="False"
+                  Background="{DynamicResource WindowBackgroundBrush}" Foreground="{DynamicResource TextBrush}" BorderThickness="0"
+                  RowBackground="{DynamicResource DataGridRowBackground}" AlternatingRowBackground="{DynamicResource DataGridAlternatingRowBackground}"
+                  GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="{DynamicResource BorderBrush}"
+                  HeadersVisibility="Column" SelectionMode="Single"
+                  CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True"
+                  SelectionChanged="GridRamDisks_SelectionChanged">
+            <DataGrid.ColumnHeaderStyle>
+                <Style TargetType="DataGridColumnHeader">
+                    <Setter Property="Background" Value="{DynamicResource DataGridHeaderBackground}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                    <Setter Property="FontWeight" Value="SemiBold"/>
+                    <Setter Property="Padding" Value="10,8"/>
+                    <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                </Style>
+            </DataGrid.ColumnHeaderStyle>
+            <DataGrid.CellStyle>
+                <Style TargetType="DataGridCell">
+                    <Setter Property="Padding" Value="10,12"/>
+                    <Setter Property="BorderThickness" Value="0"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="DataGridCell">
+                                <Border Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}">
+                                    <ContentPresenter />
+                                </Border>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                    <Style.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Background" Value="{DynamicResource DataGridCellSelectedBackground}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource DataGridCellSelectedText}"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </DataGrid.CellStyle>
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[ColDrive]}" Binding="{Binding DriveLetterString}" Width="80"/>
+                <DataGridTextColumn Header="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[ColSize]}" Binding="{Binding SizeString}" Width="100"/>
+                <DataGridTextColumn Header="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[ColFS]}" Binding="{Binding FileSystem}" Width="120"/>
+                <DataGridTextColumn Header="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[ColSave]}" Binding="{Binding SaveOnShutdownString}" Width="200"/>
+                <DataGridTextColumn Header="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[ColBackup]}" Binding="{Binding ImagePath}" Width="*"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- Status Bar -->
+        <Border Grid.Row="2" Background="{DynamicResource ToolbarBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Ellipse x:Name="StatusDot" Fill="#38E54D" Style="{StaticResource StatusLight}"/>
+                    <TextBlock x:Name="TxtStatus" Text="0 RAM Disks Mounted" Foreground="{DynamicResource TextBrush}" FontSize="12"/>
+                </StackPanel>
+                <TextBlock Grid.Column="1" x:Name="TxtSystemRam" Text="Calculating memory..." Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
