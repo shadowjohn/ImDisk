@@ -105,27 +105,7 @@ namespace ImDiskGui
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            // Ensure service is running and driver is installed
-            bool serviceStarted = false;
-            try
-            {
-                await Task.Run(() =>
-                {
-                    using (var sc = new System.ServiceProcess.ServiceController("ImDisk"))
-                    {
-                        if (sc.Status != System.ServiceProcess.ServiceControllerStatus.Running)
-                        {
-                            sc.Start();
-                            sc.WaitForStatus(System.ServiceProcess.ServiceControllerStatus.Running, TimeSpan.FromSeconds(5));
-                        }
-                    }
-                });
-                serviceStarted = true;
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine("ImDisk service check failed: " + ex.Message);
-            }
+            bool serviceStarted = await CheckAndStartServiceAsync();
 
             if (!serviceStarted)
             {
@@ -144,14 +124,25 @@ namespace ImDiskGui
                         {
                             Owner = this
                         };
-                        win.ShowDialog();
+                        
+                        if (win.ShowDialog() == true)
+                        {
+                            serviceStarted = await CheckAndStartServiceAsync();
+                        }
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine("DriverMaintenanceWindow failed: " + ex.Message);
+                    }
                 }
 
-                CloseAndExit();
-                return;
+                if (!serviceStarted)
+                {
+                    CloseAndExit();
+                    return;
+                }
             }
+
 
             // Initialize Language ComboBox
             if (LanguageManager.Instance.CurrentLanguage == "zh-TW")
@@ -180,6 +171,30 @@ namespace ImDiskGui
             LoadConfig();
             RefreshMountedState();
             UpdateMemoryStatus();
+        }
+
+        private async Task<bool> CheckAndStartServiceAsync()
+        {
+            try
+            {
+                return await Task.Run(() =>
+                {
+                    using (var sc = new System.ServiceProcess.ServiceController("ImDisk"))
+                    {
+                        if (sc.Status != System.ServiceProcess.ServiceControllerStatus.Running)
+                        {
+                            sc.Start();
+                            sc.WaitForStatus(System.ServiceProcess.ServiceControllerStatus.Running, TimeSpan.FromSeconds(5));
+                        }
+                    }
+                    return true;
+                });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("ImDisk service check failed: " + ex.Message);
+                return false;
+            }
         }
 
         private void LoadConfig()

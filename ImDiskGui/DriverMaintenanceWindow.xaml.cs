@@ -35,7 +35,6 @@ namespace ImDiskGui
                    File.Exists(ResolvePath("driver", "svc", "i386", "imdsksvc.exe")) &&
                    File.Exists(ResolvePath("driver", "cpl", "i386", "imdisk.cpl")) &&
                    File.Exists(ResolvePath("driver", "cli", "i386", "imdisk.exe")) &&
-                   File.Exists(ResolvePath("driver", "uninstall_imdisk.cmd")) &&
                    File.Exists(ResolvePath("uninstall_imdisk.cmd"));
         }
 
@@ -51,12 +50,47 @@ namespace ImDiskGui
                 return;
             }
 
-            RunInfInstall(ResolvePath("driver", "imdisk.inf"));
+            string targetInf = ResolvePath("driver", "imdisk.inf");
+            string tempScript = ResolvePath("driver", "uninstall_imdisk.cmd");
+            string sourceScript = ResolvePath("uninstall_imdisk.cmd");
+
+            try
+            {
+                if (File.Exists(sourceScript))
+                {
+                    File.Copy(sourceScript, tempScript, true);
+                }
+                RunInfInstall(targetInf);
+            }
+            finally
+            {
+                try
+                {
+                    if (File.Exists(tempScript))
+                    {
+                        File.Delete(tempScript);
+                    }
+                }
+                catch { }
+            }
         }
 
         private void BtnUninstall_Click(object sender, RoutedEventArgs e)
         {
-            if (!File.Exists(ResolvePath("uninstall_imdisk.cmd")))
+            string localScript = ResolvePath("uninstall_imdisk.cmd");
+            string systemScript = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "uninstall_imdisk.cmd");
+
+            string scriptToRun = null;
+            if (File.Exists(localScript))
+            {
+                scriptToRun = localScript;
+            }
+            else if (File.Exists(systemScript))
+            {
+                scriptToRun = systemScript;
+            }
+
+            if (scriptToRun == null)
             {
                 MessageBox.Show(
                     "找不到 `uninstall_imdisk.cmd`，無法執行移除。",
@@ -66,23 +100,45 @@ namespace ImDiskGui
                 return;
             }
 
-            var uninstallScript = string.Join(" ", new[]
-            {
-                "$drv = Get-CimInstance Win32_PnPSignedDriver | Where-Object {",
-                "($_.DeviceName -like '*ImDisk*') -or",
-                "($_.Description -like '*ImDisk*') -or",
-                "($_.DriverProviderName -like '*LTR Data*') -or",
-                "($_.InfName -ieq 'imdisk.inf')",
-                "} | Select-Object -First 1",
-                "if (-not $drv) { throw '找不到已安裝的 ImDisk driver package。' }",
-                "& pnputil.exe /delete-driver $($drv.InfName) /uninstall /force"
-            });
-
             RunElevated(
-                "powershell.exe",
-                $"-NoProfile -ExecutionPolicy Bypass -Command \"{uninstallScript.Replace("\"", "\\\"")}\"",
-                AppBasePath
+                "cmd.exe",
+                $"/c \"\"{scriptToRun}\"\"",
+                Path.GetDirectoryName(scriptToRun)
             );
+
+            // Verify if the service is successfully removed
+            bool isRemoved = false;
+            try
+            {
+                using (var sc = new System.ServiceProcess.ServiceController("ImDisk"))
+                {
+                    var status = sc.Status;
+                }
+            }
+            catch
+            {
+                isRemoved = true;
+            }
+
+            if (isRemoved)
+            {
+                MessageBox.Show(
+                    "驅動程式已成功移除！",
+                    LanguageManager.Instance["Info"],
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                
+                DialogResult = false;
+                Close();
+            }
+            else
+            {
+                MessageBox.Show(
+                    "驅動程式移除程式已執行，但偵測到服務仍存在，可能需要重新啟動電腦以完成移除，或是請先確認磁碟是否皆已卸載。",
+                    LanguageManager.Instance["Warning"],
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
         }
 
         private void RunElevated(string fileName, string arguments, string workingDirectory)
@@ -133,7 +189,17 @@ namespace ImDiskGui
                 if (proc != null)
                 {
                     proc.WaitForExit();
-                    if (proc.ExitCode != 0)
+                    if (proc.ExitCode == 0)
+                    {
+                        DialogResult = true;
+                        MessageBox.Show(
+                            "驅動程式安裝成功！",
+                            LanguageManager.Instance["Info"],
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
+                        Close();
+                    }
+                    else
                     {
                         MessageBox.Show(
                             LanguageManager.Instance.Format("DriverInstallFailed", $"ExitCode={proc.ExitCode}"),
