@@ -1,0 +1,68 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [ master ]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Setup NuGet
+      uses: NuGet/setup-nuget@v2
+
+    - name: Run Build Script (Compile GUI & Package Driver)
+      shell: powershell
+      run: |
+        .\auto_build_gui.ps1
+
+    - name: Find Output Directory & Zip
+      shell: powershell
+      run: |
+        $outDir = ""
+        if (Test-Path "ImDiskGui\bin\x64\Release\net48") {
+            $outDir = "ImDiskGui\bin\x64\Release\net48"
+        } elseif (Test-Path "ImDiskGui\bin\Release\net48") {
+            $outDir = "ImDiskGui\bin\Release\net48"
+        } else {
+            Write-Error "Could not find compile output directory!"
+            exit 1
+        }
+        
+        # Create a clean packaging directory to avoid packing unnecessary files
+        $packDir = "ImDiskGui_Release"
+        New-Item -ItemType Directory -Path $packDir -Force
+        
+        # Copy package files (Exe, config, uninstall, and driver folder)
+        Copy-Item "$outDir\ImDiskGui.exe" "$packDir\"
+        Copy-Item "$outDir\ImDiskGui.exe.config" "$packDir\"
+        Copy-Item "$outDir\uninstall_imdisk.cmd" "$packDir\"
+        Copy-Item "$outDir\driver" "$packDir\" -Recurse
+        
+        # Zip the directory
+        Compress-Archive -Path "$packDir\*" -DestinationPath "ImDiskGui_Release.zip" -Force
+        Write-Host "Zipped release package to ImDiskGui_Release.zip"
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ImDiskGui-Release-Zip
+        path: ImDiskGui_Release.zip
+
+    - name: Create GitHub Release
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: softprops/action-gh-release@v2
+      with:
+        files: ImDiskGui_Release.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

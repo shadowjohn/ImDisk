@@ -1,4 +1,4 @@
-﻿# UTF-8 with BOM or UTF-8
+# UTF-8 with BOM or UTF-8
 $OutputEncoding = [System.Text.Encoding]::UTF8
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
@@ -58,11 +58,16 @@ Write-Host "[資訊] 編譯環境檢查完成。" -ForegroundColor Green
 Write-Host ""
 
 # 2. Prompt user
-Write-Host "[2/4] 請選擇編譯模式：" -ForegroundColor Yellow
-Write-Host "1. 僅編譯 C# GUI 介面 (ImDiskGui.csproj)"
-Write-Host "2. 編譯整個專案 (包括 C++ 驅動核心與 C# GUI，需要安裝 WDK 與 Windows SDK 8.1)"
-$buildMode = Read-Host "請輸入選項 (1 或 2，預設為 1)"
-if ([string]::IsNullOrEmpty($buildMode)) { $buildMode = "1" }
+$buildMode = "1"
+if ($env:CI -eq "true" -or $env:GITHUB_ACTIONS -eq "true") {
+    Write-Host "[資訊] 偵測到 CI/CD 環境，自動選擇編譯模式 1 (僅編譯 C# GUI)" -ForegroundColor Green
+} else {
+    Write-Host "[2/4] 請選擇編譯模式：" -ForegroundColor Yellow
+    Write-Host "1. 僅編譯 C# GUI 介面 (ImDiskGui.csproj)"
+    Write-Host "2. 編譯整個專案 (包括 C++ 驅動核心與 C# GUI，需要安裝 WDK 與 Windows SDK 8.1)"
+    $buildMode = Read-Host "請輸入選項 (1 或 2，預設為 1)"
+    if ([string]::IsNullOrEmpty($buildMode)) { $buildMode = "1" }
+}
 
 if ($buildMode -eq "2") {
     Write-Host ""
