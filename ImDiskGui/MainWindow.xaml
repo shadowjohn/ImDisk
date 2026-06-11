@@ -83,6 +83,14 @@
                             <TextBlock Text="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[Benchmark]}" FontWeight="Bold"/>
                         </StackPanel>
                     </Button>
+
+                    <!-- Resize button -->
+                    <Button x:Name="BtnResize" Style="{StaticResource ToolbarButton}" Click="BtnResize_Click" IsEnabled="False">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="📐" Foreground="#00BCD4" Margin="0,0,5,0"/>
+                            <TextBlock Text="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[ResizeDisk]}" FontWeight="Bold"/>
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right">

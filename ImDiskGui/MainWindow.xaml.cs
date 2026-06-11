@@ -660,11 +660,83 @@ namespace ImDiskGui
             {
                 BtnSync.IsEnabled = !string.IsNullOrEmpty(disk.ImagePath) && disk.IsMounted;
                 BtnBenchmark.IsEnabled = disk.IsMounted;
+                BtnResize.IsEnabled = disk.IsMounted;
             }
             else
             {
                 BtnSync.IsEnabled = false;
                 BtnBenchmark.IsEnabled = false;
+                BtnResize.IsEnabled = false;
+            }
+        }
+
+        private async void BtnResize_Click(object sender, RoutedEventArgs e)
+        {
+            if (GridRamDisks.SelectedItem is RamDiskConfig disk && disk.IsMounted)
+            {
+                var dlg = new ResizeDialog(disk.DriveLetter, disk.SizeInBytes)
+                {
+                    Owner = this
+                };
+
+                if (dlg.ShowDialog() == true)
+                {
+                    long newSizeInBytes = dlg.NewSizeInBytes;
+                    long extendSizeInBytes = newSizeInBytes - disk.SizeInBytes;
+
+                    TxtStatus.Text = LanguageManager.Instance.Format("MsgResizing", disk.DriveLetterString);
+
+                    bool success = await Task.Run(() =>
+                    {
+                        try
+                        {
+                            long extendSize = extendSizeInBytes;
+                            return ImDiskNativeApi.ImDiskExtendDevice(IntPtr.Zero, disk.DeviceNumber, ref extendSize);
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine("Error extending device: " + ex.Message);
+                            return false;
+                        }
+                    });
+
+                    if (success)
+                    {
+                        disk.SizeInBytes = newSizeInBytes;
+                        SaveConfig();
+
+                        // If backing image exists, automatically pad the file as well so it matches new size
+                        if (!string.IsNullOrEmpty(disk.ImagePath) && File.Exists(disk.ImagePath))
+                        {
+                            try
+                            {
+                                using (var fs = new FileStream(disk.ImagePath, FileMode.Open, FileAccess.Write))
+                                {
+                                    fs.SetLength(newSizeInBytes);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                Debug.WriteLine("Error extending backup file: " + ex.Message);
+                            }
+                        }
+
+                        TxtStatus.Text = LanguageManager.Instance.Format("MsgResizeSuccess", disk.DriveLetterString, (newSizeInBytes / (1024 * 1024)).ToString());
+                        
+                        // Force refresh DataGrid row display
+                        GridRamDisks.Items.Refresh();
+                    }
+                    else
+                    {
+                        MessageBox.Show(
+                            LanguageManager.Instance.Format("MsgResizeFailed", disk.DriveLetterString),
+                            LanguageManager.Instance["Error"],
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Error
+                        );
+                        TxtStatus.Text = LanguageManager.Instance["Error"];
+                    }
+                }
             }
         }
 

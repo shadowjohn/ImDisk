@@ -198,6 +198,13 @@ namespace ImDiskGui
             ref long Size
         );
 
+        [DllImport("imdisk.cpl", CharSet = CharSet.Unicode, SetLastError = true)]
+        public static extern bool ImDiskExtendDevice(
+            IntPtr WindowHandle,
+            uint DeviceNumber,
+            ref long ExtendSize
+        );
+
         // --- P/INVOKE DECLARATIONS (fmifs.dll - Native Formatting) ---
         public delegate bool FormatCallback(int command, uint modifier, IntPtr parameter);
 

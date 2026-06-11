@@ -137,7 +137,14 @@ namespace ImDiskGui
                     { "BenchPhysicalRam", "{0} physical" },
                     { "BenchRamDiskValue", "{0} {1}，測試檔 {2}" },
                     { "TrayMinTitle", "已縮小至系統列" },
-                    { "TrayMinText", "ImDisk RAM 磁碟管理員仍在背景運行。雙擊此圖示可重新開啟。" }
+                    { "TrayMinText", "ImDisk RAM 磁碟管理員仍在背景運行。雙擊此圖示可重新開啟。" },
+                    { "ResizeDisk", "調整大小" },
+                    { "ResizeTitle", "調整 RAM 磁碟大小" },
+                    { "ResizePrompt", "磁碟 {0}: 目前容量為 {1} MB。\n請輸入新的容量 (MB，只能放大)：" },
+                    { "MsgSizeMustBeLarger", "新的容量必須大於目前容量。" },
+                    { "MsgResizing", "正在調整磁碟 {0} 的大小..." },
+                    { "MsgResizeSuccess", "磁碟 {0} 已成功調整大小為 {1} MB。" },
+                    { "MsgResizeFailed", "調整磁碟 {0} 大小失敗。" }
                 }
             },
             {
@@ -250,7 +257,14 @@ namespace ImDiskGui
                     { "BenchPhysicalRam", "{0} physical" },
                     { "BenchRamDiskValue", "{0} {1}, test file {2}" },
                     { "TrayMinTitle", "Minimized to Tray" },
-                    { "TrayMinText", "ImDisk RAM Disk Manager is still running in the background. Double-click this icon to restore." }
+                    { "TrayMinText", "ImDisk RAM Disk Manager is still running in the background. Double-click this icon to restore." },
+                    { "ResizeDisk", "Resize" },
+                    { "ResizeTitle", "Resize RAM Disk" },
+                    { "ResizePrompt", "Drive {0}: Current size is {1} MB.\nEnter new size (MB, can only grow):" },
+                    { "MsgSizeMustBeLarger", "New size must be larger than current size." },
+                    { "MsgResizing", "Resizing drive {0}..." },
+                    { "MsgResizeSuccess", "Drive {0} successfully resized to {1} MB." },
+                    { "MsgResizeFailed", "Failed to resize drive {0}." }
                 }
             }
         };
