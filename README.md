@@ -2,6 +2,8 @@
 
 本專案已整合 C# WPF GUI 管理介面。GUI 與 driver payload 分開發佈，`ImDiskGui.exe` 只負責管理與呼叫 driver 安裝/移除流程，不再把 driver 合體進單一執行檔。
 
+![Rami Mascot](screenshot/about-avatar.png)
+
 ## 開發動機與設計亮點 (Motivation & Highlights)
 
 ### 💡 開發動機
