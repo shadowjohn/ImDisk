@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:ImDiskGui"
         Title="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[DlgAddTitle]}" Height="420" Width="480"
+        Icon="imdisk.ico"
         Background="{DynamicResource WindowBackgroundBrush}" Foreground="{DynamicResource TextBrush}" WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize">
     <Grid Margin="20">

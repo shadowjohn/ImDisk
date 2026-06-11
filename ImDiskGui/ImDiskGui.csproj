@@ -29,6 +29,7 @@
   <ItemGroup>
     <None Remove="Assets\about-avatar.png" />
     <Resource Include="Assets\about-avatar.png" />
+    <Resource Include="imdisk.ico" />
   </ItemGroup>
 
 </Project>

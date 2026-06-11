@@ -111,6 +111,11 @@
 ### 5. 新增磁碟對話框 (Add Disk Dialog)
 ![新增磁碟](screenshot/S5_data_keep_img.png)
 
+## 開發合作與致謝 (Credits & AI Collaboration)
+
+* **UI 圖像與角色頭像**：本專案主程式所使用之吉祥物與角色頭像（位於 `ImDiskGui/Assets/about-avatar.png` 及相關 `.ico` 圖示）為 **Codex / AI 繪圖工具** 輔助生成，版權歸屬於本專案作者，並隨本專案開源條款發佈。
+* **AI 協作開發**：本 GUI 管理介面之現代化外觀重構、系統狀態同步修復、智慧自動存檔機制、線上調整大小等功能，由作者 **羽山 (3wa.tw)** 聯合 **Google DeepMind Gemini** 及 **OpenAI Codex** 共同 Pair Programming 協作開發完成。
+
 ---
 
 # ImDisk Virtual Disk Driver for Windows NT/2000/XP/2003/Vista/7/8/8.1/10

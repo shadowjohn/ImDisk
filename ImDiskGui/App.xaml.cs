@@ -129,24 +129,25 @@ namespace ImDiskGui
 
             ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
-            // Load tray icon from the executable itself so the package does not need a loose .ico file.
+            // Load tray icon from embedded resources for pixel-perfect resolution.
             _notifyIcon = new NotifyIcon();
 
             try
             {
-                string exePath = Assembly.GetExecutingAssembly().Location;
-                Icon appIcon = Icon.ExtractAssociatedIcon(exePath);
-                if (appIcon != null)
+                var iconUri = new Uri("pack://application:,,,/ImDiskGui;component/imdisk.ico");
+                var streamInfo = Application.GetResourceStream(iconUri);
+                if (streamInfo != null)
                 {
-                    _notifyIcon.Icon = appIcon;
+                    _notifyIcon.Icon = new Icon(streamInfo.Stream);
                 }
                 else
                 {
                     _notifyIcon.Icon = SystemIcons.Application;
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine("Failed to load high-res tray icon: " + ex.Message);
                 _notifyIcon.Icon = SystemIcons.Application;
             }
 

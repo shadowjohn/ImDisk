@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:ImDiskGui"
         Title="{Binding Source={x:Static local:LanguageManager.Instance}, Path=[DriverMaintenance]}"
+        Icon="imdisk.ico"
         SizeToContent="WidthAndHeight"
         Width="520"
         Background="{DynamicResource WindowBackgroundBrush}" Foreground="{DynamicResource TextBrush}"
