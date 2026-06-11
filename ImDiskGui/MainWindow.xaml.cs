@@ -171,6 +171,15 @@ namespace ImDiskGui
             LoadConfig();
             RefreshMountedState();
             UpdateMemoryStatus();
+
+            // Auto-mount any unmounted disks on startup
+            foreach (var disk in RamDisks.ToList())
+            {
+                if (!disk.IsMounted)
+                {
+                    await MountDiskAsync(disk, isNewDisk: false);
+                }
+            }
         }
 
         private async Task<bool> CheckAndStartServiceAsync()
@@ -343,11 +352,11 @@ namespace ImDiskGui
                 RamDisks.Add(newDisk);
                 SaveConfig();
 
-                await MountDiskAsync(newDisk);
+                await MountDiskAsync(newDisk, isNewDisk: true);
             }
         }
 
-        private async Task MountDiskAsync(RamDiskConfig disk)
+        private async Task MountDiskAsync(RamDiskConfig disk, bool isNewDisk = false)
         {
             TxtStatus.Text = LanguageManager.Instance.Format("MsgMounting", disk.DriveLetterString);
 
@@ -419,8 +428,11 @@ namespace ImDiskGui
                     MessageBoxButton.OK,
                     MessageBoxImage.Error
                 );
-                RamDisks.Remove(disk);
-                SaveConfig();
+                if (isNewDisk)
+                {
+                    RamDisks.Remove(disk);
+                    SaveConfig();
+                }
             }
 
             RefreshMountedState();
@@ -638,6 +650,25 @@ namespace ImDiskGui
             {
                 BtnSync.IsEnabled = false;
                 BtnBenchmark.IsEnabled = false;
+            }
+        }
+
+        private async void GridRamDisks_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (GridRamDisks.SelectedItem is RamDiskConfig disk)
+            {
+                if (!disk.IsMounted)
+                {
+                    await MountDiskAsync(disk, isNewDisk: false);
+                }
+                else
+                {
+                    var benchWin = new BenchmarkWindow(disk.DriveLetter)
+                    {
+                        Owner = this
+                    };
+                    benchWin.ShowDialog();
+                }
             }
         }
 

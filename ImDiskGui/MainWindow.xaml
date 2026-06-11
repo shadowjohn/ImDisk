@@ -126,7 +126,8 @@
                   GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="{DynamicResource BorderBrush}"
                   HeadersVisibility="Column" SelectionMode="Single"
                   CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True"
-                  SelectionChanged="GridRamDisks_SelectionChanged">
+                  SelectionChanged="GridRamDisks_SelectionChanged"
+                  MouseDoubleClick="GridRamDisks_MouseDoubleClick">
             <DataGrid.ColumnHeaderStyle>
                 <Style TargetType="DataGridColumnHeader">
                     <Setter Property="Background" Value="{DynamicResource DataGridHeaderBackground}"/>
