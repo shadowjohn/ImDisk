@@ -91,17 +91,20 @@
 
 ## 介面展示 (UI Screenshots)
 
-| 主管理介面 (Main Window - Light Theme) | 驅動維護面板 (Maintenance Window) |
-|---|---|
-| ![主畫面](screenshot/S0.png) | ![驅動維護](screenshot/S1.png) |
+### 1. 主管理介面 (Main Window - Light Theme)
+![主畫面](screenshot/S0.png)
 
-| 效能測試面板 (Benchmark - Light Theme) | 效能測試面板 (Benchmark - Dark Theme) |
-|---|---|
-| ![效能測試 1](screenshot/S3_benchmark.png) | ![效能測試 2](screenshot/S4_benchmark.png) |
+### 2. 驅動維護面板 (Maintenance Window)
+![驅動維護](screenshot/S1.png)
 
-| 新增磁碟對話框 (Add Disk Dialog) | |
-|---|---|
-| ![新增磁碟](screenshot/S5_data_keep_img.png) | |
+### 3. 效能測試面板 - 淺色模式 (Benchmark - Light Theme)
+![效能測試 1](screenshot/S3_benchmark.png)
+
+### 4. 效能測試面板 - 深色模式 (Benchmark - Dark Theme)
+![效能測試 2](screenshot/S4_benchmark.png)
+
+### 5. 新增磁碟對話框 (Add Disk Dialog)
+![新增磁碟](screenshot/S5_data_keep_img.png)
 
 ---
 
