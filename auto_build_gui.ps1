@@ -10,48 +10,56 @@ Write-Host ""
 # 1. Environment Check
 Write-Host "[1/4] 正在檢查編譯環境..." -ForegroundColor Yellow
 
-$vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-if (-not (Test-Path $vswhere)) {
-    $vswhere = "${env:ProgramFiles}\Microsoft Visual Studio\Installer\vswhere.exe"
-}
-
-if (-not (Test-Path $vswhere)) {
-    Write-Host "[錯誤] 找不到 vswhere.exe。請確認是否已安裝 Visual Studio。" -ForegroundColor Red
-    Write-Host "官方下載網址: https://visualstudio.microsoft.com/" -ForegroundColor Gray
-    Exit 1
-}
-
-$vsPath = & $vswhere -latest -products * -requires Microsoft.Component.MSBuild -property installationPath
-if ([string]::IsNullOrEmpty($vsPath)) {
-    Write-Host "[錯誤] 找不到已安裝 MSBuild 的 Visual Studio 版本。" -ForegroundColor Red
-    Write-Host "請透過 Visual Studio Installer 安裝 'MSBuild' 組件。" -ForegroundColor Gray
-    Exit 1
-}
-
-$msbuildPath = Join-Path $vsPath "MSBuild\Current\Bin\MSBuild.exe"
-if (-not (Test-Path $msbuildPath)) {
-    Write-Host "[錯誤] 找不到 MSBuild.exe (路徑: $msbuildPath)" -ForegroundColor Red
-    Exit 1
-}
-
-Write-Host "[資訊] 偵測到 MSBuild: $msbuildPath" -ForegroundColor Green
-
-# Check WDK
-$wdkFound = $false
-$vcPaths = Get-ChildItem (Join-Path $vsPath "MSBuild\Microsoft\VC\v*") -ErrorAction SilentlyContinue
-foreach ($p in $vcPaths) {
-    $wdkProps = Join-Path $p.FullName "WDKConversion\PreConfiguration.props"
-    if (Test-Path $wdkProps) {
-        $wdkFound = $true
-        break
+$msbuildPath = ""
+$msbuildTest = Get-Command "msbuild" -ErrorAction SilentlyContinue
+if ($msbuildTest -ne $null) {
+    $msbuildPath = $msbuildTest.Source
+    Write-Host "[資訊] 偵測到系統 PATH 已有 MSBuild，直接使用: $msbuildPath" -ForegroundColor Green
+    $wdkFound = $false # In CI path we don't build C++ driver anyway
+} else {
+    $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+    if (-not (Test-Path $vswhere)) {
+        $vswhere = "${env:ProgramFiles}\Microsoft Visual Studio\Installer\vswhere.exe"
     }
-}
 
-if (-not $wdkFound) {
-    Write-Host "[警告] 偵測到此環境未安裝 Windows Driver Kit (WDK)。" -ForegroundColor Yellow
-    Write-Host "[警告] 編譯 C++ 驅動核心需要 WDK。如果您尚未編譯過驅動程式，編譯整個專案 (選項 2) 將會失敗。" -ForegroundColor Yellow
-    Write-Host "提示：若您僅修改 GUI 介面，選擇模式 1 即可；driver payload 會獨立整理到輸出目錄。" -ForegroundColor Gray
-    Write-Host ""
+    if (-not (Test-Path $vswhere)) {
+        Write-Host "[錯誤] 找不到 vswhere.exe。請確認是否已安裝 Visual Studio。" -ForegroundColor Red
+        Write-Host "官方下載網址: https://visualstudio.microsoft.com/" -ForegroundColor Gray
+        Exit 1
+    }
+
+    $vsPath = & $vswhere -latest -products * -requires Microsoft.Component.MSBuild -property installationPath
+    if ([string]::IsNullOrEmpty($vsPath)) {
+        Write-Host "[錯誤] 找不到已安裝 MSBuild 的 Visual Studio 版本。" -ForegroundColor Red
+        Write-Host "請透過 Visual Studio Installer 安裝 'MSBuild' 組件。" -ForegroundColor Gray
+        Exit 1
+    }
+
+    $msbuildPath = Join-Path $vsPath "MSBuild\Current\Bin\MSBuild.exe"
+    if (-not (Test-Path $msbuildPath)) {
+        Write-Host "[錯誤] 找不到 MSBuild.exe (路徑: $msbuildPath)" -ForegroundColor Red
+        Exit 1
+    }
+
+    Write-Host "[資訊] 偵測到 MSBuild: $msbuildPath" -ForegroundColor Green
+
+    # Check WDK
+    $wdkFound = $false
+    $vcPaths = Get-ChildItem (Join-Path $vsPath "MSBuild\Microsoft\VC\v*") -ErrorAction SilentlyContinue
+    foreach ($p in $vcPaths) {
+        $wdkProps = Join-Path $p.FullName "WDKConversion\PreConfiguration.props"
+        if (Test-Path $wdkProps) {
+            $wdkFound = $true
+            break
+        }
+    }
+
+    if (-not $wdkFound) {
+        Write-Host "[警告] 偵測到此環境未安裝 Windows Driver Kit (WDK)。" -ForegroundColor Yellow
+        Write-Host "[警告] 編譯 C++ 驅動核心需要 WDK。如果您尚未編譯過驅動程式，編譯整個專案 (選項 2) 將會失敗。" -ForegroundColor Yellow
+        Write-Host "提示：若您僅修改 GUI 介面，選擇模式 1 即可；driver payload 會獨立整理到輸出目錄。" -ForegroundColor Gray
+        Write-Host ""
+    }
 }
 
 Write-Host "[資訊] 編譯環境檢查完成。" -ForegroundColor Green
