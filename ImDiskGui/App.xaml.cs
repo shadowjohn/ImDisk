@@ -152,6 +152,7 @@ namespace ImDiskGui
 
             _notifyIcon.Visible = true;
             _notifyIcon.DoubleClick += NotifyIcon_DoubleClick;
+            _notifyIcon.MouseClick += NotifyIcon_MouseClick;
 
             // Context Menu for Tray
             var contextMenu = new ContextMenuStrip();
@@ -186,6 +187,14 @@ namespace ImDiskGui
             ShowMainWindow();
         }
 
+        private void NotifyIcon_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                ShowMainWindow();
+            }
+        }
+
         public void ShowMainWindow()
         {
             if (_mainWindow == null)
@@ -196,6 +205,7 @@ namespace ImDiskGui
             }
             else
             {
+                _mainWindow.Show();
                 if (_mainWindow.WindowState == WindowState.Minimized)
                 {
                     _mainWindow.WindowState = WindowState.Normal;
