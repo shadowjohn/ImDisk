@@ -7,8 +7,14 @@ All notable changes to the ImDisk GUI project will be documented in this file.
 - **資料自動儲存時間 (Auto Save Interval)**：進階設定中新增定時備份下拉選單，支援 `1分鐘`、`3分鐘`、`5分鐘`、`10分鐘`、`30分鐘`、`60分鐘` 定期同步資料回備份映像檔。
 - **智慧變更偵測 (Dirty check)**：查詢核心驅動的 `IMDISK_IMAGE_MODIFIED` 標記，只有在虛擬磁碟被寫入/變更過資料時才觸發定時備份，避免無謂寫入，保護實體 SSD 的寫入壽命。
 - **設定檔保存延伸**：`config.json` 格式擴充 `AutoSaveIntervalMinutes` 欄位以持久化保存設定，由自定義 `SimpleJsonParser` 相容序列化。
+- **線上調整 RAM 磁碟大小 (Resize RAM Disk)**：主工具列新增「調整大小」功能，已掛載磁碟可直接輸入更大的容量，底層透過 `ImDiskExtendDevice` 擴充，不需先卸載重建。
+- **備份映像檔同步延伸**：若調整大小的磁碟綁定了備份映像檔，GUI 會同步延伸 `.img` / `.bin` 檔案大小，避免下次還原時容量與映像檔不一致。
 
 ### Changed
+- **完整磁碟映像同步**：資料保存流程改用 ImDisk 原生 `ImDiskSaveImageFile` 儲存完整磁碟映像，保留分割表、檔案系統與底層結構；同步成功後會清除 `IMDISK_IMAGE_MODIFIED` 標記，讓下一輪自動儲存判斷更準確。
+- **既有映像檔精準掛載**：新增磁碟時若選擇已存在的 `.img` / `.bin`，會自動偵測實際 byte 大小並以該大小掛載，避免 MB 換算造成截斷或額外補零。
+- **主畫面清單欄位**：新增「自動儲存」欄位，直接顯示每顆 RAM 磁碟目前是手動保存或指定分鐘數自動保存。
+- **README 文件同步**：補齊 1.01 的定時同步、Dirty Check、完整映像保存與既有映像檔精準還原說明。
 - **版本號更新**：主程式與 `AssemblyInfo` 版本更新至 `1.0.1.0`，關於視窗版本文字更新至 `1.01`。
 
 ## [2026-06-11] - 優化與修復版 (Optimization & Bugfix Release)
