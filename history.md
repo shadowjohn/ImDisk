@@ -108,3 +108,10 @@
 - 文件補充同步引擎改為透過 `ImDiskSaveImageFile` 儲存完整磁碟映像，成功後清除 modified flag，並保留原子寫入 `.tmp` 交換保護。
 - 文件補充既有 `.img` / `.bin` 備份檔會自動偵測實際大小，避免重新掛載時因 MB 換算造成映像檔截斷或大小錯位。
 - `CHANGELOG.md` 已補齊 1.01 發布紀錄，包含線上調整 RAM 磁碟大小、備份映像檔同步延伸、完整磁碟映像同步、既有映像檔精準掛載與 README 文件同步。
+
+## 日期：2026-06-11 (GitHub Release 權限修正)
+
+### GitHub Actions
+- 推送 `v1.01` tag 後，`Build and Release` workflow 的 build、zip、artifact upload 皆成功，但 `softprops/action-gh-release@v2` 在建立 Release 時失敗：`Resource not accessible by integration`。
+- 原因是 workflow 未宣告 `GITHUB_TOKEN` 的 release 寫入權限；已在 `.github/workflows/build.yml` 新增 `permissions: contents: write`，讓後續 `v*` tag 可自動建立 GitHub Release 並上傳 `ImDiskGui_Release.zip`。
+- 本次 `v1.01` Release 已手動建立並用 `gh release upload` 補上 `ImDiskGui_Release.zip`。
