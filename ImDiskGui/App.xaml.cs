@@ -129,25 +129,39 @@ namespace ImDiskGui
 
             ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
-            // Load tray icon from embedded resources for pixel-perfect resolution.
+            // Load tray icon from embedded 16x16 PNG for pixel-perfect sharpness.
             _notifyIcon = new NotifyIcon();
 
             try
             {
-                var iconUri = new Uri("pack://application:,,,/ImDiskGui;component/imdisk.ico");
+                var iconUri = new Uri("pack://application:,,,/ImDiskGui;component/Assets/imdisk-avatar-tray-16.png");
                 var streamInfo = Application.GetResourceStream(iconUri);
                 if (streamInfo != null)
                 {
-                    _notifyIcon.Icon = new Icon(streamInfo.Stream);
+                    using (var bitmap = new Bitmap(streamInfo.Stream))
+                    {
+                        IntPtr hIcon = bitmap.GetHicon();
+                        _notifyIcon.Icon = Icon.FromHandle(hIcon);
+                    }
                 }
                 else
                 {
-                    _notifyIcon.Icon = SystemIcons.Application;
+                    // Fallback to imdisk.ico
+                    var icoUri = new Uri("pack://application:,,,/ImDiskGui;component/imdisk.ico");
+                    var icoStream = Application.GetResourceStream(icoUri);
+                    if (icoStream != null)
+                    {
+                        _notifyIcon.Icon = new Icon(icoStream.Stream);
+                    }
+                    else
+                    {
+                        _notifyIcon.Icon = SystemIcons.Application;
+                    }
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine("Failed to load high-res tray icon: " + ex.Message);
+                System.Diagnostics.Debug.WriteLine("Failed to load tray icon: " + ex.Message);
                 _notifyIcon.Icon = SystemIcons.Application;
             }
 

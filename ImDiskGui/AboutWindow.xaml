@@ -45,7 +45,11 @@
             </Grid.ColumnDefinitions>
 
             <Border Width="74" Height="74" CornerRadius="37" Background="{DynamicResource ToolbarBackgroundBrush}" BorderBrush="#38E54D" BorderThickness="1" HorizontalAlignment="Left">
-                <Image Source="Assets/about-avatar.png" Width="72" Height="72" Stretch="UniformToFill" SnapsToDevicePixels="True"/>
+                <Image Width="72" Height="72" Stretch="UniformToFill" SnapsToDevicePixels="True" RenderOptions.BitmapScalingMode="HighQuality">
+                    <Image.Source>
+                        <BitmapImage UriSource="Assets/about-avatar.png" DecodePixelWidth="144" DecodePixelHeight="144"/>
+                    </Image.Source>
+                </Image>
             </Border>
 
             <StackPanel Grid.Column="1" VerticalAlignment="Center">

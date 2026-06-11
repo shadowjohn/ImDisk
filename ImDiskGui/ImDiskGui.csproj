@@ -30,6 +30,7 @@
     <None Remove="Assets\about-avatar.png" />
     <Resource Include="Assets\about-avatar.png" />
     <Resource Include="imdisk.ico" />
+    <Resource Include="Assets\imdisk-avatar-tray-16.png" />
   </ItemGroup>
 
 </Project>
