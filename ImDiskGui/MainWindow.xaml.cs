@@ -383,6 +383,21 @@ namespace ImDiskGui
                 if (!string.IsNullOrEmpty(filename) && File.Exists(filename))
                 {
                     // Driver will load the file contents automatically into VM memory
+                    try
+                    {
+                        var fi = new FileInfo(filename);
+                        if (fi.Length < disk.SizeInBytes)
+                        {
+                            using (var fs = new FileStream(filename, FileMode.Open, FileAccess.Write))
+                            {
+                                fs.SetLength(disk.SizeInBytes);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine("Error padding image file: " + ex.Message);
+                    }
                 }
                 else
                 {
@@ -600,7 +615,7 @@ namespace ImDiskGui
         {
             TxtStatus.Text = LanguageManager.Instance.Format("MsgSyncing", disk.DriveLetterString, Path.GetFileName(disk.ImagePath));
 
-            bool success = await SyncEngine.SaveRamDiskToImageAsync(disk.DriveLetter, disk.ImagePath, (pct) =>
+            bool success = await SyncEngine.SaveRamDiskToImageAsync(disk.DriveLetter, disk.ImagePath, disk.SizeInBytes, (pct) =>
             {
                 Dispatcher.Invoke(() =>
                 {
@@ -707,7 +722,7 @@ namespace ImDiskGui
             {
                 if (disk.IsMounted && disk.SaveOnShutdown && !string.IsNullOrEmpty(disk.ImagePath))
                 {
-                    SyncEngine.SaveRamDiskToImage(disk.DriveLetter, disk.ImagePath);
+                    SyncEngine.SaveRamDiskToImage(disk.DriveLetter, disk.ImagePath, disk.SizeInBytes);
                 }
             }
         }

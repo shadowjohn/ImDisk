@@ -10,12 +10,12 @@ namespace ImDiskGui
     {
         public delegate void ProgressCallback(double percentage);
 
-        public static async Task<bool> SaveRamDiskToImageAsync(char driveLetter, string targetImagePath, ProgressCallback progress = null)
+        public static async Task<bool> SaveRamDiskToImageAsync(char driveLetter, string targetImagePath, long diskSize, ProgressCallback progress = null)
         {
-            return await Task.Run(() => SaveRamDiskToImage(driveLetter, targetImagePath, progress));
+            return await Task.Run(() => SaveRamDiskToImage(driveLetter, targetImagePath, diskSize, progress));
         }
 
-        public static bool SaveRamDiskToImage(char driveLetter, string targetImagePath, ProgressCallback progress = null)
+        public static bool SaveRamDiskToImage(char driveLetter, string targetImagePath, long diskSize, ProgressCallback progress = null)
         {
             string volumePath = @"\\.\" + driveLetter + ":";
             string tempImagePath = targetImagePath + ".tmp";
@@ -47,19 +47,22 @@ namespace ImDiskGui
                 ImDiskNativeApi.FlushFileBuffers(hVolume);
 
                 // 3. Get total volume size
-                long volumeSize = 0;
-                if (!ImDiskNativeApi.ImDiskGetVolumeSize(hVolume, ref volumeSize) || volumeSize <= 0)
+                long volumeSize = diskSize;
+                if (volumeSize <= 0)
                 {
-                    // Fallback: Query disk geometry via API if volume size fails
-                    // Let's check drive capacity by directory info as another fallback
-                    try
+                    if (!ImDiskNativeApi.ImDiskGetVolumeSize(hVolume, ref volumeSize) || volumeSize <= 0)
                     {
-                        var driveInfo = new DriveInfo(driveLetter.ToString());
-                        volumeSize = driveInfo.TotalSize;
-                    }
-                    catch
-                    {
-                        volumeSize = 100 * 1024 * 1024; // Default to 100MB fallback if all else fails
+                        // Fallback: Query disk geometry via API if volume size fails
+                        // Let's check drive capacity by directory info as another fallback
+                        try
+                        {
+                            var driveInfo = new DriveInfo(driveLetter.ToString());
+                            volumeSize = driveInfo.TotalSize;
+                        }
+                        catch
+                        {
+                            volumeSize = 100 * 1024 * 1024; // Default to 100MB fallback if all else fails
+                        }
                     }
                 }
 
