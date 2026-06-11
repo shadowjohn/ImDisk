@@ -126,6 +126,10 @@ if (Test-Path $zipPath) {
                     $src = Join-Path $tempExtractDir $zf
                     $dst = $zf
                     if (Test-Path $src) {
+                        $parentDst = Split-Path -Parent $dst
+                        if (![string]::IsNullOrEmpty($parentDst) -and -not (Test-Path $parentDst)) {
+                            New-Item -ItemType Directory -Path $parentDst | Out-Null
+                        }
                         Copy-Item $src $dst -Force
                         Write-Host "已從 ZIP 複製並覆寫: $zf" -ForegroundColor Gray
                     }
@@ -269,7 +273,10 @@ foreach ($item in $driverCopyMap) {
 
 if (Test-Path "uninstall_imdisk.cmd") {
     Copy-Item "uninstall_imdisk.cmd" (Join-Path $outDir "uninstall_imdisk.cmd") -Force
-    Copy-Item "uninstall_imdisk.cmd" (Join-Path $driverOutDir "uninstall_imdisk.cmd") -Force
+}
+$driverUninstallScript = Join-Path $driverOutDir "uninstall_imdisk.cmd"
+if (Test-Path $driverUninstallScript) {
+    Remove-Item $driverUninstallScript -Force
 }
 
 if (Test-Path $exePath) {
@@ -280,8 +287,14 @@ if (Test-Path $exePath) {
     Write-Host "  $((Get-Item $exePath).FullName)" -ForegroundColor White
     Write-Host "driver payload 位置:"
     Write-Host "  $((Get-Item $driverOutDir).FullName)" -ForegroundColor White
-    Write-Host "卸載腳本位置:"
-    Write-Host "  $((Get-Item (Join-Path $outDir 'uninstall_imdisk.cmd')).FullName)" -ForegroundColor White
+    $uninstallScript = Join-Path $outDir 'uninstall_imdisk.cmd'
+    if (Test-Path $uninstallScript) {
+        Write-Host "卸載腳本位置:"
+        Write-Host "  $((Get-Item $uninstallScript).FullName)" -ForegroundColor White
+    } else {
+        Write-Host "卸載腳本位置:"
+        Write-Host "  [未就緒] 尚未置入 uninstall_imdisk.cmd (可下載官方 imdisk.zip 置於根目錄重新執行，以自動擷取)" -ForegroundColor Yellow
+    }
     Write-Host ""
     Write-Host "說明：" -ForegroundColor Green
     Write-Host "  此執行檔不內嵌 driver；driver payload 已獨立整理到 driver 目錄。"
