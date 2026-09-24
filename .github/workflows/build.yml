@@ -51,10 +51,42 @@ jobs:
         Copy-Item "$outDir\ImDiskGui.exe.config" "$packDir\"
         Copy-Item "$outDir\uninstall_imdisk.cmd" "$packDir\"
         Copy-Item "$outDir\driver" "$packDir\" -Recurse
+
+        $required = @(
+          "ImDiskGui.exe", "ImDiskGui.exe.config", "uninstall_imdisk.cmd",
+          "driver\\imdisk.inf", "driver\\sys\\amd64\\imdisk.sys",
+          "driver\\svc\\amd64\\imdsksvc.exe", "driver\\cpl\\amd64\\imdisk.cpl",
+          "driver\\cli\\amd64\\imdisk.exe", "driver\\sys\\i386\\imdisk.sys",
+          "driver\\svc\\i386\\imdsksvc.exe", "driver\\cpl\\i386\\imdisk.cpl",
+          "driver\\cli\\i386\\imdisk.exe"
+        )
+        foreach ($file in $required) {
+          if (-not (Test-Path (Join-Path $packDir $file))) {
+            throw "Package missing required file: $file"
+          }
+        }
         
         # Zip the directory
         Compress-Archive -Path "$packDir\*" -DestinationPath "ImDiskGui_Release.zip" -Force
         Write-Host "Zipped release package to ImDiskGui_Release.zip"
+
+    - name: Build bilingual setup
+      shell: powershell
+      run: |
+        choco install innosetup --yes --no-progress
+        if ($LASTEXITCODE -ne 0) { throw "Inno Setup installation failed" }
+        $iscc = "${env:ProgramFiles(x86)}\\Inno Setup 6\\ISCC.exe"
+        if (-not (Test-Path $iscc)) { throw "ISCC.exe not found" }
+        $version = [System.Diagnostics.FileVersionInfo]::GetVersionInfo(
+          (Resolve-Path "ImDiskGui_Release\\ImDiskGui.exe")).FileVersion
+        & $iscc "/DAppVersion=$version" "installer\\ImDiskGui.iss"
+        if ($LASTEXITCODE -ne 0) { throw "Installer compilation failed" }
+
+    - name: Upload Setup Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ImDiskGui-Setup
+        path: installer/output/ImDiskGui-Setup-*.exe
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
@@ -66,6 +98,8 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/v')
       uses: softprops/action-gh-release@v2
       with:
-        files: ImDiskGui_Release.zip
+        files: |
+          ImDiskGui_Release.zip
+          installer/output/ImDiskGui-Setup-*.exe
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
