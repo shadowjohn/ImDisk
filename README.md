@@ -1,3 +1,7 @@
+[English README](README.en.md) · [本 fork 的發行版](https://github.com/shadowjohn/ImDisk/releases)
+
+> 本專案是羽山（shadowjohn）獨立維護的 ImDisk fork，並非 LTR Data 官方發行版。原始驅動由 Olof Lagerkvist 開發；我們相當敬佩並感謝他的貢獻。GUI 安裝器僅安裝程式及驅動檔案，驅動須在程式內另行確認安裝。關於視窗可手動檢查本 fork 的新版，並開啟發行頁面，不會自動更新驅動。
+
 # ImDisk GUI 與 Driver Payload 編譯說明 (GUI Build & Driver Payload Instructions)
 
 本專案已整合 C# WPF GUI 管理介面。GUI 與 driver payload 分開發佈，`ImDiskGui.exe` 只負責管理與呼叫 driver 安裝/移除流程，不再把 driver 合體進單一執行檔。
