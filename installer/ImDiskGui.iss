@@ -27,7 +27,7 @@ LicenseFile=..\LICENSE.md
 
 [Languages]
 Name: "en"; MessagesFile: "compiler:Default.isl"
-Name: "zh"; MessagesFile: "compiler:Languages\ChineseTraditional.isl"
+Name: "zh"; MessagesFile: "ChineseTraditional.isl"
 
 [CustomMessages]
 en.ForkNotice=Independent fork maintained by FeatherMountain (shadowjohn). The original ImDisk driver is by Olof Lagerkvist (LTR Data), whose work we deeply appreciate. This setup installs the GUI and driver files; driver installation is requested separately in the app.
