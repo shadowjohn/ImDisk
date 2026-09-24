@@ -2,7 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Net;
 using System.Reflection;
-using System.Web.Script.Serialization;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Navigation;
 
@@ -60,10 +60,13 @@ namespace ImDiskGui
                         new Uri("https://api.github.com/repos/shadowjohn/ImDisk/releases/latest"));
                 }
 
-                var release = new JavaScriptSerializer().Deserialize<ReleaseInfo>(json);
-                if (release == null || string.IsNullOrWhiteSpace(release.tag_name) ||
-                    string.IsNullOrWhiteSpace(release.html_url) ||
-                    !Uri.TryCreate(release.html_url, UriKind.Absolute, out var releaseUri) ||
+                var tagMatch = Regex.Match(json, "\\\"tag_name\\\"\\s*:\\s*\\\"([^\\\"]+)\\\"");
+                var urlMatch = Regex.Match(json, "\\\"html_url\\\"\\s*:\\s*\\\"([^\\\"]+)\\\"");
+                string tagName = tagMatch.Success ? tagMatch.Groups[1].Value : null;
+                string releaseUrl = urlMatch.Success ? urlMatch.Groups[1].Value : null;
+                if (string.IsNullOrWhiteSpace(tagName) ||
+                    string.IsNullOrWhiteSpace(releaseUrl) ||
+                    !Uri.TryCreate(releaseUrl, UriKind.Absolute, out var releaseUri) ||
                     releaseUri.Scheme != Uri.UriSchemeHttps ||
                     releaseUri.Host != "github.com" ||
                     !releaseUri.AbsolutePath.StartsWith("/shadowjohn/ImDisk/releases/", StringComparison.OrdinalIgnoreCase))
@@ -71,15 +74,15 @@ namespace ImDiskGui
 
                 Version latest;
                 Version current = Assembly.GetExecutingAssembly().GetName().Version;
-                if (release.tag_name.Equals("v1.01", StringComparison.OrdinalIgnoreCase))
+                if (tagName.Equals("v1.01", StringComparison.OrdinalIgnoreCase))
                     latest = new Version(1, 0, 1, 0);
-                else if (!Version.TryParse(release.tag_name.TrimStart('v', 'V'), out latest))
+                else if (!Version.TryParse(tagName.TrimStart('v', 'V'), out latest))
                     throw new InvalidOperationException("Invalid release version.");
 
                 if (latest > current)
                 {
                     var choice = MessageBox.Show(
-                        LanguageManager.Instance.Format("UpdateAvailable", release.tag_name),
+                        LanguageManager.Instance.Format("UpdateAvailable", tagName),
                         LanguageManager.Instance["UpdateTitle"],
                         MessageBoxButton.YesNo, MessageBoxImage.Information);
                     if (choice == MessageBoxResult.Yes)
@@ -100,12 +103,6 @@ namespace ImDiskGui
             {
                 btnCheckUpdates.IsEnabled = true;
             }
-        }
-
-        private sealed class ReleaseInfo
-        {
-            public string tag_name { get; set; }
-            public string html_url { get; set; }
         }
 
         private void BtnClose_Click(object sender, RoutedEventArgs e)
