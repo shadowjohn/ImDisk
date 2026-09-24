@@ -49,7 +49,7 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{app}\ImDiskGui.exe"; Tasks: deskto
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
 [Run]
-Filename: "{app}\ImDiskGui.exe"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\ImDiskGui.exe"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: shellexec postinstall skipifsilent
 
 [Code]
 procedure InitializeWizard;
