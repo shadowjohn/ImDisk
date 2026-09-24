@@ -71,7 +71,9 @@ namespace ImDiskGui
 
                 Version latest;
                 Version current = Assembly.GetExecutingAssembly().GetName().Version;
-                if (!Version.TryParse(release.tag_name.TrimStart('v', 'V'), out latest))
+                if (release.tag_name.Equals("v1.01", StringComparison.OrdinalIgnoreCase))
+                    latest = new Version(1, 0, 1, 0);
+                else if (!Version.TryParse(release.tag_name.TrimStart('v', 'V'), out latest))
                     throw new InvalidOperationException("Invalid release version.");
 
                 if (latest > current)
