@@ -2,7 +2,7 @@ name: Build and Release
 
 on:
   push:
-    branches: [ master, feat/gui-installer-update-en-readme ]
+    branches: [ master, feat/gui-installer-update-en-readme, fix/installer-first-launch-elevation ]
     tags:
       - 'v*'
   workflow_dispatch:
