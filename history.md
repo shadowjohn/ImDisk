@@ -115,3 +115,11 @@
 - 推送 `v1.01` tag 後，`Build and Release` workflow 的 build、zip、artifact upload 皆成功，但 `softprops/action-gh-release@v2` 在建立 Release 時失敗：`Resource not accessible by integration`。
 - 原因是 workflow 未宣告 `GITHUB_TOKEN` 的 release 寫入權限；已在 `.github/workflows/build.yml` 新增 `permissions: contents: write`，讓後續 `v*` tag 可自動建立 GitHub Release 並上傳 `ImDiskGui_Release.zip`。
 - 本次 `v1.01` Release 已手動建立並用 `gh release upload` 補上 `ImDiskGui_Release.zip`。
+
+## 日期：2026-06-16 (fzf / fd 套件查核)
+
+### 第三方 CLI 工具
+- 查核 `fzf` (junegunn/fzf)、`fd` (sharkdp.fd；David Peter / sharkdp) 及 `winget` 安裝指令，repo 全文與檔名搜尋未發現納入 ImDisk 專案或安裝流程。
+- `cpl\fd.ico` 與 `cli\imdisk.c` 中的 `fd` 是 ImDisk 的 floppy disk 簡稱 / icon，非 sharkdp 的 `fd` 搜尋工具。
+- `imdisk.zip` 內容亦未找到 `fzf`、`fz`、`fd`、`junegunn`、`sharkdp`、`winget` 或 `David Peter` 相關項目。
+- 結論：`winget install sharkdp.fd` 與 `winget install junegunn.fzf` 屬於外部命令列工具安裝，非 ImDisk 套件必要內容。
